@@ -1,4 +1,10 @@
-"""Render a CV PDF from a JSON profile using Jinja2 + WeasyPrint."""
+"""
+Render a CV PDF from a JSON profile using Jinja2 + WeasyPrint.
+"""
+
+# =============================================================
+# packages
+# =============================================================
 from __future__ import annotations
 
 import argparse
@@ -8,13 +14,23 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from weasyprint import HTML
 
-ROOT = Path(__file__).parent
-TEMPLATES_DIR = ROOT / "templates"
-STATIC_DIR = ROOT / "static"
-OUTPUT_DIR = ROOT / "output"
-DEFAULT_DATA = ROOT / "data" / "profile.json"
+
+# =============================================================
+# config
+# =============================================================
+
+PKG_DIR = Path(__file__).parent
+PROJECT_ROOT = PKG_DIR.parent
+TEMPLATES_DIR = PKG_DIR / "templates"
+STATIC_DIR = PKG_DIR / "static"
+OUTPUT_DIR = PROJECT_ROOT / "output"
+DEFAULT_DATA = PKG_DIR / "data" / "profile.json"
 DEFAULT_OUTPUT = OUTPUT_DIR / "cv.pdf"
 
+
+# =============================================================
+# functions
+# =============================================================
 
 def render(data_path: Path, output_path: Path) -> Path:
     with data_path.open("r", encoding="utf-8") as f:
@@ -28,7 +44,7 @@ def render(data_path: Path, output_path: Path) -> Path:
     html_str = template.render(**data)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    HTML(string=html_str, base_url=str(ROOT)).write_pdf(
+    HTML(string=html_str, base_url=str(PKG_DIR)).write_pdf(
         target=str(output_path),
         stylesheets=[str(STATIC_DIR / "style.css")],
     )
@@ -42,19 +58,23 @@ def main() -> None:
         nargs="?",
         type=Path,
         default=DEFAULT_DATA,
-        help=f"Path to a JSON profile (default: {DEFAULT_DATA.relative_to(ROOT)})",
+        help=f"Path to a JSON profile (default: {DEFAULT_DATA})",
     )
     parser.add_argument(
         "-o",
         "--output",
         type=Path,
         default=DEFAULT_OUTPUT,
-        help=f"Output PDF path (default: {DEFAULT_OUTPUT.relative_to(ROOT)})",
+        help=f"Output PDF path (default: {DEFAULT_OUTPUT})",
     )
     args = parser.parse_args()
     out = render(args.data, args.output)
     print(f"Wrote {out}")
 
+
+# =============================================================
+# main
+# =============================================================
 
 if __name__ == "__main__":
     main()
