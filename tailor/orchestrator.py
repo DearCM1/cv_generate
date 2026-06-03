@@ -63,35 +63,43 @@ def tailor(jd_path: Path, company_path: Path, out_path: Path) -> Path:
         amender,
         assembler,
         company_researcher,
-        jd_analyzer,
+        jd_analyser,
         retriever,
         reviewer
     )
 
+    # Step 1
     run_dir = _create_run_dir()
     jd_text = load_text(jd_path)
     company_text = load_text(company_path)
 
-    jd_spec = jd_analyzer.analyze_jd(jd_text)
+    # Step 2
+    jd_spec = jd_analyser.analyze_jd(jd_text)
     (run_dir / "jd_spec.json").write_text(jd_spec.model_dump_json(indent=2))
 
+    # Step 3
     company = company_researcher.research_company(company_text)
     (run_dir / "company.json").write_text(company.model_dump_json(indent=2))
 
+    # Step 4
     snippets = json.loads(SNIPPETS_PATH.read_text())
     selection = retriever.select_snippets(snippets, jd_spec, company)
     (run_dir / "selection.json").write_text(selection.model_dump_json(indent=2))
 
+    # Step 5
     base = Profile.model_validate_json(BASE_PROFILE_PATH.read_text())
     profile = assembler.assemble_profile(selection, jd_spec, company, base, snippets)
     (run_dir / "profile_draft.json").write_text(profile.model_dump_json(indent=2))
 
+    # Step 6
     report = reviewer.review(profile, jd_spec)
     (run_dir / "review.json").write_text(report.model_dump_json(indent=2))
 
+    # Step 7
     final = amender.amend(profile, report)
     final_path = run_dir / "profile.json"
     final_path.write_text(final.model_dump_json(indent=2))
 
+    # Step 8
     out_path.parent.mkdir(parents=True, exist_ok=True)
     return render(final_path, out_path)

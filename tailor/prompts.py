@@ -1,19 +1,32 @@
-"""All prompt strings for the tailor pipeline live here.
-
-Each constant is named `<STAGE>_SYSTEM` for the system block and
-`<STAGE>_USER` for the user-message template. Per CLAUDE.md, inline HTML in
-profile fields is rendered with Jinja's `| safe` filter — the assembler
-prompts must remind the model that user-controlled HTML must be sanitised.
 """
+All prompt strings for the tailor pipeline live here.
+
+Inline HTML in profile fields is rendered with Jinja's `| safe`
+filter — the assembler prompts must remind the model that 
+user-controlled HTML must be sanitised.
+"""
+# =============================================================
+# packages
+# =============================================================
 
 from __future__ import annotations
 
-JD_ANALYZER_SYSTEM = """You analyse job descriptions for a CV-tailoring \
+
+# =============================================================
+# Step 2: Job Description Analyser
+# =============================================================
+
+JD_ANALYSER_SYSTEM = """You analyse job descriptions for a CV-tailoring \
 pipeline. Extract a structured `JDSpec` describing what an ATS will scan for \
 and what tone the employer expects. Be concrete: prefer verbatim phrases \
 from the JD over paraphrases for `ats_keywords`."""
 
-JD_ANALYZER_USER = "Job description:\n\n{jd_text}"
+JD_ANALYSER_USER = "Job description:\n\n{jd_text}"
+
+
+# =============================================================
+# Step 3: Company Research Agent
+# =============================================================
 
 COMPANY_RESEARCH_SYSTEM = """You research a target company for a CV-tailoring \
 pipeline. Start from the user-supplied profile, then use web_search to \
@@ -23,6 +36,11 @@ of: business focus, tech signals, values, and 2-3 recent initiatives. \
 Return a structured `CompanyContext` and cite the URLs that informed it."""
 
 COMPANY_RESEARCH_USER = "Company profile (user-supplied):\n\n{profile_text}"
+
+
+# =============================================================
+# Step 4: Retrieval
+# =============================================================
 
 RETRIEVER_SYSTEM = """You select experience snippets for a tailored CV. The \
 snippet corpus is in the next system block. For each `render_hint` section \
@@ -41,6 +59,11 @@ Sections to fill (render_hint values present in the corpus):
 
 Return a `SnippetSelection` mapping each render_hint to an ordered list of \
 `{{snippet_id, framing}}`."""
+
+
+# =============================================================
+# Step 5: Assembler / CV Builder
+# =============================================================
 
 ASSEMBLER_SYSTEM = """You assemble a tailored CV profile JSON. The schema is \
 in the next system block; it must match exactly (field names, nesting). \
@@ -64,6 +87,11 @@ Selected snippets (id, chosen framing, text):
 Base profile (stable fields to copy through):
 {base}"""
 
+
+# =============================================================
+# Step 6: Reviewer
+# =============================================================
+
 REVIEWER_SYSTEM = """You critique a tailored CV against a JD spec. Identify \
 missing ATS keywords, weak or generic bullets, tone mismatches, and the risk \
 of overflowing one A4 page. Be specific: cite section and bullet index."""
@@ -73,6 +101,10 @@ REVIEWER_USER = """JD spec:
 
 Profile to review:
 {profile}"""
+
+# =============================================================
+# Step 7: Amender
+# =============================================================
 
 AMENDER_SYSTEM = """You apply a `ReviewReport` to a CV profile and return the \
 revised profile JSON. Make only the changes the report requests; preserve \
