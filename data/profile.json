@@ -1,0 +1,82 @@
+{
+  "name": "Calum Dear",
+  "credential": "Ph.D. UCL",
+  "contact": {
+    "location": "Bristol, UK",
+    "phone": "+44 7540 347550",
+    "email": "calumdear@gmail.com",
+    "linkedin": {
+      "label": "/in/calumdear/",
+      "url": "https://www.linkedin.com/in/calumdear/"
+    }
+  },
+  "summary": "PhD-trained Data Engineer specialising in Python analytics, scalable data pipelines, and AI/ML integration. Experienced building production data infrastructure cross-functionally in agile environments, encompassing LLM-driven automation, cloud-based AWS pipelines, and data quality frameworks.",
+  "education": [
+    {
+      "institution": "University College London (UCL)",
+      "qualification": "Ph.D., Electronic & Electrical Engineering",
+      "dates": "2021 — 2025"
+    },
+    {
+      "institution": "Cardiff University",
+      "qualification": "MSc, Compound Semiconductor Physics (<strong>Distinction</strong>)",
+      "dates": "2020 — 2021"
+    },
+    {
+      "institution": "Cardiff University",
+      "qualification": "BSc, Physics (<strong>First Class Honours</strong>)",
+      "dates": "2016 — 2020"
+    }
+  ],
+  "experience": [
+    {
+      "title": "Data Engineer",
+      "organisation": "Prime Appliances Ltd.",
+      "dates": "Sept 2025 – Present",
+      "bullets": [
+        "Designed and built production-grade data pipelines integrating product, inventory, order, and fulfilment data between Shopify and additional marketplaces, resulting in ~12% revenue growth.",
+        "Deployed AWS Lambdas to perform ETL of supplier inventory feeds, synchronise Shopify stock levels, and store historical S3 snapshots for time-series modelling.",
+        "Developed LLM-powered automation workflows using OpenAI API, including programmatic data validation and AI-generated product content from structured attributes and image vision analysis.",
+        "Built margin-aware pricing intelligence systems using Python and SQL, aggregating competitor data, applying statistical models, and using LLM-based product matching to generate optimised RRPs.",
+        "Established data governance and taxonomy frameworks to support rapid nationwide scale-up in a retail environment.",
+        "Led agile delivery workflows between the business and logistics/inventory stakeholders, managing a capability roadmap and iterating features based on operational feedback."
+      ]
+    },
+    {
+      "title": "Ph.D. Researcher",
+      "organisation": "University College London",
+      "dates": "Oct 2021 – Sept 2025",
+      "bullets": [
+        "Built reproducible Python analytics pipelines (pandas, NumPy, SciPy, matplotlib) for data ingestion, cleaning, transformation, model fitting, and visualisation across a £1m multi-institution research programme.",
+        "Designed and analysed large experimental datasets, applying statistical modelling and multivariate regression to identify performance drivers.",
+        "Established and maintained data governance standards across cross-functional academic and industry teams, ensuring reproducibility and compliance under commercial IP frameworks.",
+        "Communicated quantitative findings through peer-reviewed publications, technical reports, and conference presentations, demonstrating the ability to surface insights from complex data clearly and credibly."
+      ]
+    }
+  ],
+  "publications_presentations": [
+    {
+      "label": "Publications",
+      "text": "First-author papers in APL Materials and Journal of Physics D (see <a href=\"https://orcid.org/\">ORCID</a>, <a href=\"https://scholar.google.com/\">Scholar</a>)."
+    },
+    {
+      "label": "Conferences",
+      "text": "Presented at 11 academic conferences to audiences of 100+ (notably NAMBE 2024, Boston, US and ICMBE 2024, Matsue, Japan)."
+    }
+  ],
+  "leadership": "I have consistently sought positions of responsibility. I served as a student representative throughout my BSc, MSc, and Ph.D., and played a central role in the undergraduate mentoring programme, eventually coordinating the mentoring provision across the entire college. I also spent a year managing a high-volume cocktail bar, leading staff and overseeing day-to-day operations.",
+  "skills": [
+    {
+      "label": "Programming",
+      "text": "Python (pandas, NumPy, SciPy), SQL, git."
+    },
+    {
+      "label": "Data Science",
+      "text": "statistical modelling, regression analysis, data cleaning/validation, feature engineering, data visualisation (matplotlib)."
+    },
+    {
+      "label": "AI/LLMs",
+      "text": "OpenAI API workflows, structured content generation, automated validation."
+    }
+  ]
+}
