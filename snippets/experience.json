@@ -1,0 +1,347 @@
+{
+  "_meta": {
+    "description": "Experience snippet store for RAG-driven CV tailoring. Each snippet is a self-contained, retrievable chunk of one role-experience theme. `text` holds the canonical phrasing; `variants` preserve alternative framings observed across reference CVs (commercial-product, data-engineer, data-scientist, semiconductor-research). The retriever should embed `text` + `variants` and select the framing that best matches the target job description.",
+    "sources": [
+      "reference/Calum_Dear_CV1.pdf — commercial / product-management framing",
+      "reference/Calum_Dear_CV2.pdf — data-engineer / pipelines framing",
+      "reference/Calum_Dear_CV3.pdf — data-scientist / analytics framing",
+      "reference/Calum_Dear_CV4.pdf — semiconductor researcher framing"
+    ],
+    "schema": {
+      "id": "stable slug, unique across file",
+      "role": "role key (prime_appliances | phd_researcher)",
+      "theme": "high-level theme tag for filtering / clustering",
+      "framing": "audience the variant targets (commercial | data-engineer | data-scientist | physics-research | strategy)",
+      "skills": "concrete skills, tools, methods — primary retrieval signal alongside text",
+      "text": "canonical phrasing (default bullet for this snippet)",
+      "variants": "alternative phrasings from other CVs; embed each so retrieval can pick by job-description tone",
+      "metrics": "extracted numeric outcomes (optional)",
+      "render_hint": "where this snippet belongs in the rendered profile.json (e.g. experience[].bullets, skills[])"
+    }
+  },
+
+  "roles": {
+    "prime_appliances": {
+      "title_variants": [
+        "Data Engineer",
+        "Data Engineer / Data Scientist"
+      ],
+      "organisation": "Prime Appliances Ltd.",
+      "dates": "Sept 2025 – Present",
+      "context": "Nationwide e-commerce scale-up. Owns data integration, pricing intelligence, and LLM-enabled automation across Shopify, supplier feeds, marketplaces, and fulfilment partners."
+    },
+    "phd_researcher": {
+      "title_variants": [
+        "Ph.D. Researcher"
+      ],
+      "organisation": "University College London",
+      "dates": "Oct 2021 – Sept 2025",
+      "context": "£1m multi-institution research programme. Two distinct framings appear across reference CVs: (a) Python analytics / data-governance / stakeholder leadership transferable to industry; (b) deep semiconductor research — III-V epitaxy, MBE-grown InAs/InP quantum dot lasers for 1.55 µm telecoms, with cleanroom fabrication and device modelling. Use (b) only for physics/engineering roles."
+    }
+  },
+
+  "snippets": [
+
+    {
+      "id": "pa_ecom_pipelines",
+      "role": "prime_appliances",
+      "theme": "data pipelines / e-commerce integration",
+      "framing": "data-engineer",
+      "skills": ["Python", "SQL", "Shopify", "marketplaces", "ETL", "data integration", "production pipelines"],
+      "text": "Designed and built production-grade data pipelines integrating product, inventory, order, and fulfilment data between Shopify and additional marketplaces, resulting in ~12% revenue growth.",
+      "variants": [
+        {
+          "framing": "data-scientist",
+          "text": "Increased monthly revenue by ~30% by implementing automated, bidirectional synchronisation of product, inventory, order, and fulfilment data across multiple sales platforms and suppliers."
+        },
+        {
+          "framing": "strategy",
+          "text": "Currently leading the design, governance, and operations of scalable data integration systems driving the company's transition to a nationwide e-commerce model."
+        },
+        {
+          "framing": "commercial",
+          "text": "Owned the end-to-end data product lifecycle for an eCommerce platform, determining strategy and delivering capabilities iteratively across pricing and analytics."
+        }
+      ],
+      "metrics": ["~12% revenue growth", "~30% monthly revenue uplift"],
+      "render_hint": "experience[prime_appliances].bullets"
+    },
+
+    {
+      "id": "pa_aws_serverless",
+      "role": "prime_appliances",
+      "theme": "cloud infrastructure / serverless ETL",
+      "framing": "data-engineer",
+      "skills": ["AWS Lambda", "AWS S3", "serverless", "ETL", "time-series", "supplier feeds", "Shopify"],
+      "text": "Deployed AWS Lambdas to perform ETL of supplier inventory feeds, synchronise Shopify stock levels, and store historical S3 snapshots for time-series modelling.",
+      "variants": [
+        {
+          "framing": "data-scientist",
+          "text": "Deployed serverless AWS Lambda pipelines to ingest and validate supplier inventory, synchronise Shopify stock, and store historical S3 snapshots for time-series demand modelling."
+        },
+        {
+          "framing": "commercial",
+          "text": "Deployed cloud-based AWS Lambda and S3 pipelines to deliver scalable and performant data infrastructure supporting nationwide commercial growth."
+        }
+      ],
+      "render_hint": "experience[prime_appliances].bullets"
+    },
+
+    {
+      "id": "pa_llm_automation",
+      "role": "prime_appliances",
+      "theme": "LLM automation / AI content generation",
+      "framing": "data-engineer",
+      "skills": ["OpenAI API", "LLM", "image vision analysis", "automated data validation", "structured content generation", "SEO"],
+      "text": "Developed LLM-powered automation workflows using OpenAI API, including programmatic data validation and AI-generated product content from structured attributes and image vision analysis.",
+      "variants": [
+        {
+          "framing": "data-scientist",
+          "text": "Developed and deployed LLM-enabled automation workflows (OpenAI API), including programmatic product data validation and generation of SEO-aligned product titles, descriptions, and metadata from structured attributes and image vision analysis."
+        },
+        {
+          "framing": "commercial",
+          "text": "Designed and delivered LLM-powered data products using the OpenAI API, including automated data validation pipelines and AI-generated content derived from structured attributes and image vision analysis."
+        }
+      ],
+      "render_hint": "experience[prime_appliances].bullets"
+    },
+
+    {
+      "id": "pa_pricing_intelligence",
+      "role": "prime_appliances",
+      "theme": "pricing intelligence / competitor analytics",
+      "framing": "data-engineer",
+      "skills": ["Python", "SQL", "statistical modelling", "competitor data", "LLM product matching", "pricing strategy", "RRP optimisation"],
+      "text": "Built margin-aware pricing intelligence systems using Python and SQL, aggregating competitor data, applying statistical models, and using LLM-based product matching to generate optimised RRPs.",
+      "variants": [
+        {
+          "framing": "data-scientist",
+          "text": "Built margin-aware pricing intelligence systems aggregating competitor Google Shopping data, using statistical pricing models and LLM-based product matching/validation to set RRPs that balance conversion, competitiveness, and sustainable net margins."
+        },
+        {
+          "framing": "commercial",
+          "text": "Developed margin-aware pricing data products combining competitor intelligence, statistical models, and LLM-based matching, with clear KPIs tracking conversion uplift and net margin performance."
+        }
+      ],
+      "render_hint": "experience[prime_appliances].bullets"
+    },
+
+    {
+      "id": "pa_data_governance",
+      "role": "prime_appliances",
+      "theme": "data governance / taxonomy / quality",
+      "framing": "data-engineer",
+      "skills": ["data governance", "taxonomy", "data quality", "master data", "scale-up"],
+      "text": "Established data governance and taxonomy frameworks to support rapid nationwide scale-up in a retail environment.",
+      "variants": [
+        {
+          "framing": "commercial",
+          "text": "Built and owned data quality, governance, and taxonomy frameworks to ensure reliability, consistency, and trust across integrated data sources spanning suppliers, marketplaces, and fulfilment partners."
+        }
+      ],
+      "render_hint": "experience[prime_appliances].bullets"
+    },
+
+    {
+      "id": "pa_agile_delivery",
+      "role": "prime_appliances",
+      "theme": "agile delivery / stakeholder management",
+      "framing": "commercial",
+      "skills": ["agile", "stakeholder management", "roadmap", "cross-functional delivery", "product feature design"],
+      "text": "Led agile delivery workflows between the business and logistics/inventory stakeholders, managing a capability roadmap and iterating features based on operational feedback.",
+      "variants": [
+        {
+          "framing": "strategy",
+          "text": "Led agile delivery workflows cross-functionally between business and technical stakeholders, translating operational requirements into structured data product features."
+        }
+      ],
+      "render_hint": "experience[prime_appliances].bullets"
+    },
+
+    {
+      "id": "phd_python_analytics",
+      "role": "phd_researcher",
+      "theme": "Python analytics pipelines / reproducibility",
+      "framing": "data-engineer",
+      "skills": ["Python", "pandas", "NumPy", "SciPy", "matplotlib", "reproducibility", "data ingestion", "data cleaning", "visualisation"],
+      "text": "Built reproducible Python analytics pipelines (pandas, NumPy, SciPy, matplotlib) for data ingestion, cleaning, transformation, model fitting, and visualisation across a £1m multi-institution research programme.",
+      "variants": [
+        {
+          "framing": "data-scientist",
+          "text": "Built reproducible Python analytics pipelines (pandas, NumPy, SciPy, matplotlib) for data ingestion, cleaning, model fitting, feature extraction, and visualisation, improving reliability and standardising analysis outputs across the research group."
+        },
+        {
+          "framing": "commercial",
+          "text": "Built Python analytics pipelines (pandas, NumPy, SciPy) for data ingestion, transformation, modelling, and reporting, defining data quality standards across the research group."
+        }
+      ],
+      "render_hint": "experience[phd_researcher].bullets"
+    },
+
+    {
+      "id": "phd_statistical_modelling",
+      "role": "phd_researcher",
+      "theme": "statistical modelling / experimental analysis",
+      "framing": "data-scientist",
+      "skills": ["statistical modelling", "multivariate regression", "experimental design", "performance attribution", "feature engineering"],
+      "text": "Designed and analysed large experimental datasets, applying statistical modelling and multivariate regression to identify performance drivers.",
+      "variants": [
+        {
+          "framing": "data-scientist",
+          "text": "Designed and analysed large experimental studies, applying statistical modelling and multivariate regression to quantify performance drivers and identify optimisation opportunities."
+        }
+      ],
+      "render_hint": "experience[phd_researcher].bullets"
+    },
+
+    {
+      "id": "phd_data_governance",
+      "role": "phd_researcher",
+      "theme": "data governance / reproducibility / IP compliance",
+      "framing": "data-engineer",
+      "skills": ["data governance", "reproducibility", "compliance", "IP frameworks", "export controls", "cross-functional standards"],
+      "text": "Established and maintained data governance standards across cross-functional academic and industry teams, ensuring reproducibility and compliance under commercial IP frameworks.",
+      "variants": [
+        {
+          "framing": "commercial",
+          "text": "Established data governance and reproducibility standards across cross-functional teams spanning academia and industry, operating under export-control and IP frameworks."
+        }
+      ],
+      "render_hint": "experience[phd_researcher].bullets"
+    },
+
+    {
+      "id": "phd_programme_leadership",
+      "role": "phd_researcher",
+      "theme": "research programme leadership / stakeholder alignment",
+      "framing": "strategy",
+      "skills": ["roadmap ownership", "stakeholder alignment", "multi-institution collaboration", "strategic direction"],
+      "text": "Led data-driven research across academic and industry partners within a £1m multi-institution research programme, translating experimental results into actionable project direction.",
+      "variants": [
+        {
+          "framing": "commercial",
+          "text": "Owned experimental roadmaps and strategic direction within a £1m multi-institution research programme, aligning senior academic and industry stakeholders around shared data-driven outcomes."
+        }
+      ],
+      "metrics": ["£1m programme value"],
+      "render_hint": "experience[phd_researcher].bullets"
+    },
+
+    {
+      "id": "phd_partnerships",
+      "role": "phd_researcher",
+      "theme": "external partnerships / technical due diligence",
+      "framing": "commercial",
+      "skills": ["partnership management", "due diligence", "external collaboration"],
+      "text": "Originated and managed external research partnerships while conducting technical due diligence.",
+      "variants": [],
+      "render_hint": "experience[phd_researcher].bullets"
+    },
+
+    {
+      "id": "phd_communication",
+      "role": "phd_researcher",
+      "theme": "scientific communication / insight surfacing",
+      "framing": "data-scientist",
+      "skills": ["technical writing", "presentations", "publications", "stakeholder communication"],
+      "text": "Communicated quantitative findings through peer-reviewed publications, technical reports, and conference presentations, demonstrating the ability to surface insights from complex data clearly and credibly.",
+      "variants": [
+        {
+          "framing": "data-scientist",
+          "text": "Communicated findings with quantitative evidence through peer-reviewed publications, technical reports, and academic conference presentations, shaping research directions across collaborators."
+        }
+      ],
+      "render_hint": "experience[phd_researcher].bullets"
+    },
+
+    {
+      "id": "phd_publishing_ecosystem",
+      "role": "phd_researcher",
+      "theme": "academic publishing / peer review ecosystem familiarity",
+      "framing": "commercial",
+      "skills": ["academic publishing", "peer review", "knowledge dissemination"],
+      "text": "Conducted research within the academic publishing and peer review ecosystem, giving firsthand understanding of how researchers generate, validate, and disseminate knowledge.",
+      "variants": [],
+      "render_hint": "experience[phd_researcher].bullets"
+    },
+
+    {
+      "id": "phd_cleanroom_fabrication",
+      "role": "phd_researcher",
+      "theme": "semiconductor cleanroom fabrication",
+      "framing": "physics-research",
+      "skills": [
+        "ISO Class 6 cleanroom", "ISO Class 5 cleanroom", "ISO-14644",
+        "III-V optoelectronic devices", "mask design",
+        "UV lithography", "direct-write lithography", "e-beam lithography",
+        "ICP-RIE", "RIE dry etching", "selective wet etching",
+        "dielectric deposition", "passivation",
+        "thin-film sputtering", "evaporation", "lift-off metallisation",
+        "wafer thinning", "device characterisation", "L-I-V", "OSA"
+      ],
+      "text": "Five (four) years' experience in ISO Class 6 (5) cleanrooms (ISO-14644). Skilled in end-to-end process optimisation for III-V optoelectronic devices, including mask design, UV lithography (direct-write and e-beam), ICP-RIE/RIE dry etching, selective wet etching, dielectric deposition/passivation, thin-film sputtering/evaporation, lift-off metallisation, wafer thinning, and device characterisation (L-I-V, OSA).",
+      "variants": [],
+      "render_hint": "skills[] or experience[phd_researcher].bullets — physics-role only"
+    },
+
+    {
+      "id": "phd_iii_v_epitaxy_mbe",
+      "role": "phd_researcher",
+      "theme": "III-V epitaxy / MBE / quantum dot lasers",
+      "framing": "physics-research",
+      "skills": [
+        "molecular beam epitaxy", "MBE", "III-V epitaxy",
+        "InAs/InP (001) quantum dots", "1.55 µm lasers",
+        "GaAs/AlGaAs", "VCSELs", "effusion-cell calibration",
+        "As2-based growth", "epitaxial interface control"
+      ],
+      "text": "Ph.D. focused on advancing molecular beam epitaxy (MBE) growth of 1.55 µm InAs/InP (001) quantum dot laser structures. Strong knowledge of III-V materials design principles transferable to GaAs/AlGaAs VCSEL and detector architectures; experienced with effusion-cell calibration, As2-based growth, and epitaxial interface control.",
+      "variants": [],
+      "render_hint": "skills[] or experience[phd_researcher].bullets — physics-role only"
+    },
+
+    {
+      "id": "phd_spc_doe",
+      "role": "phd_researcher",
+      "theme": "process control / DOE / semiconductor data workflows",
+      "framing": "physics-research",
+      "skills": [
+        "statistical process control", "SPC",
+        "design of experiments", "DOE",
+        "Python", "NumPy", "pandas", "matplotlib",
+        "SEMI protocols", "III-V safety standards"
+      ],
+      "text": "Experienced in Python-based statistical process control (SPC), design-of-experiments (DOE), and data-driven optimisation workflows using NumPy/pandas/matplotlib; familiar with SEMI protocols and III-V safety standards.",
+      "variants": [],
+      "render_hint": "skills[] — physics-role only"
+    },
+
+    {
+      "id": "phd_simulation_tools",
+      "role": "phd_researcher",
+      "theme": "optical / thermal / epitaxial simulation",
+      "framing": "physics-research",
+      "skills": [
+        "Lumerical", "FDTD", "FMM",
+        "COMSOL", "Photon Design CAD",
+        "optical modelling", "thermal modelling", "epitaxial structure modelling",
+        "simulation-fabrication-characterisation feedback"
+      ],
+      "text": "Proficient with Lumerical (FDTD/FMM), COMSOL, and Photon Design CAD tools for optical, thermal, and epitaxial structure modelling; capable of integrating simulation–fabrication–characterisation feedback for rapid prototype iteration.",
+      "variants": [],
+      "render_hint": "skills[] — physics-role only"
+    },
+
+    {
+      "id": "phd_device_efficiency_outcome",
+      "role": "phd_researcher",
+      "theme": "research outcome / device efficiency record",
+      "framing": "physics-research",
+      "skills": ["semiconductor lasers", "telecommunications", "device efficiency", "next-generation telecoms"],
+      "text": "Specialised in the development of semiconductor laser materials for next-generation telecommunications, achieving record improvements in device efficiency.",
+      "variants": [],
+      "render_hint": "summary — physics-role only"
+    }
+  ]
+}
