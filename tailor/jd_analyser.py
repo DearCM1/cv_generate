@@ -39,7 +39,7 @@ def _tool_definition() -> dict:
     }
 
 
-def analyze_jd(jd_text: str) -> JDSpec:
+def analyse_jd(jd_text: str) -> JDSpec:
     """
     Call Claude with the JD text and force it to emit a `JDSpec` via a
     single tool call. Returns the validated Pydantic model.

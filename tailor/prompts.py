@@ -29,11 +29,15 @@ JD_ANALYSER_USER = "Job description:\n\n{jd_text}"
 # =============================================================
 
 COMPANY_RESEARCH_SYSTEM = """You research a target company for a CV-tailoring \
-pipeline. Start from the user-supplied profile, then use web_search to \
+pipeline. Start from the user-supplied profile, then use `web_search` to \
 enrich it with recent news, tech-stack signals, and stated values. Cap your \
 research at a handful of searches — depth is less important than coverage \
 of: business focus, tech signals, values, and 2-3 recent initiatives. \
-Return a structured `CompanyContext` and cite the URLs that informed it."""
+
+You MUST finish your turn by calling the `record_company_context` tool \
+exactly once, with everything you have learned filled in. Include the source \
+URLs you relied on in the `sources` field. Do not respond with plain text; \
+the recording tool call is the only valid termination of this turn."""
 
 COMPANY_RESEARCH_USER = "Company profile (user-supplied):\n\n{profile_text}"
 

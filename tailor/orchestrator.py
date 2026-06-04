@@ -74,7 +74,7 @@ def tailor(jd_path: Path, company_path: Path, out_path: Path) -> Path:
     company_text = load_text(company_path)
 
     # Step 2
-    jd_spec = jd_analyser.analyze_jd(jd_text)
+    jd_spec = jd_analyser.analyse_jd(jd_text)
     (run_dir / "jd_spec.json").write_text(jd_spec.model_dump_json(indent=2))
 
     # Step 3
