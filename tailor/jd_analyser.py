@@ -58,6 +58,7 @@ def analyse_jd(jd_text: str) -> JDSpec:
         ],
     )
 
+    # TODO Check here for 200 response structure. https://platform.claude.com/docs/en/api/messages/create
     for block in response.content:
         if block.type == "tool_use" and block.name == TOOL_NAME:
             return JDSpec.model_validate(block.input)

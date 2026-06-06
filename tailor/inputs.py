@@ -15,6 +15,7 @@ from pathlib import Path
 # =============================================================
 
 def load_text(path: Path) -> str:
+    #TODO add path to accept web address for BeautifulSoup extract.
     suffix = path.suffix.lower()
 
     if suffix in {".md", ".txt", ""}:
