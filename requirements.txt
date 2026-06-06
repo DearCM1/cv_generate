@@ -3,3 +3,4 @@ WeasyPrint>=62.0
 anthropic>=0.40
 pydantic>=2
 pypdf>=4
+uuid6>=2025.0.1

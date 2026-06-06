@@ -1,5 +1,6 @@
 """
 Pydantic schemas for inter-stage data and structured LLM outputs.
+Also includes metrics tracking for website audit output.
 
 Field names must comply with with the Jinja template at:
     render_pdf/templates/cv.html.
@@ -10,9 +11,12 @@ Field names must comply with with the Jinja template at:
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field
+from uuid import UUID
+from uuid6 import uuid7
 
 
 # =============================================================
@@ -30,7 +34,7 @@ Framing = Literal[
 
 
 # =============================================================
-# schemas
+# pipeline schemas
 # =============================================================
 
 class JDSpec(BaseModel):
@@ -134,3 +138,65 @@ class ReviewReport(BaseModel):
     weak_bullets: list[WeakBullet]
     tone_issues: list[str]
     length_risk: Literal["low", "medium", "high"]
+
+
+# =============================================================
+# metric schemas
+# =============================================================
+
+#TODO Review whether this is best data structure for metrics
+
+class CallTimeMetrics(BaseModel):
+    """
+    Time taken per LLM call.
+    """
+    start: AwareDatetime
+    finish: AwareDatetime
+    elapsed: timedelta
+
+class RunTimeMetrics(BaseModel):
+    """
+    Overall runtime of orchestrator.py.
+    """
+    start: AwareDatetime
+    finish: AwareDatetime
+    elapsed: timedelta
+
+
+class TokenCost(BaseModel):
+    """
+    Token cost breakdown per LLM call.
+    """
+    tokens_total: int
+    tokens_in: int
+    tokens_out: int
+    tokens_reasoning: int
+
+
+class ModelCost(BaseModel):
+    """
+    LLM total cost in dollars and tokens.
+    """
+    dollars: float
+    tokens: TokenCost
+
+
+class ModelMetrics(BaseModel):
+    """
+    Tracking key metrics for individual LLM call usage.
+    """
+    model: str
+    runtime: CallTimeMetrics
+    cost: ModelCost
+
+
+class Metrics(BaseModel):
+    """
+    Master metrics object to push to website output.
+    """
+    id: UUID = Field(default_factory=uuid7)
+    runtime: RunTimeMetrics
+    model_metrics: list[ModelMetrics]
+    job_spec: JDSpec
+    company_context: CompanyContext
+    snippet_selection: SnippetSelection
