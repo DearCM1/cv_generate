@@ -14,9 +14,12 @@ from __future__ import annotations
 
 import json
 
+from anthropic import APIError
+
 from .client import SONNET, cached_text_block, client
 from .prompts import AMENDER_SYSTEM, AMENDER_USER
 from .schemas import ReviewReport, TailoredSections
+from .tool_response import parse_forced_tool_response
 
 
 # =============================================================
@@ -53,38 +56,43 @@ def amend(
     report: ReviewReport,
 ) -> TailoredSections:
     """
-    Apply the review report to the tailored sections in a single Sonnet
-    call. Schema is enforced via the forced tool call and re-validated
-    by Pydantic on the way out.
+    Apply the review report to the tailored sections in a single model call.
+    Schema is enforced via the forced tool call and re-validated by Pydantic
+    on the way out.
     """
-    response = client().messages.create(
-        model=SONNET,
-        max_tokens=AMENDER_MAX_TOKENS,
-        system=[
-            {"type": "text", "text": AMENDER_SYSTEM},
-            cached_text_block(
-                "TailoredSections schema (must match exactly):\n"
-                + json.dumps(TailoredSections.model_json_schema(), indent=2)
-            ),
-        ],
-        tools=[_tool_definition()],
-        tool_choice={"type": "tool", "name": TOOL_NAME},
-        messages=[
-            {
-                "role": "user",
-                "content": AMENDER_USER.format(
-                    report=report.model_dump_json(indent=2),
-                    sections=sections.model_dump_json(indent=2),
+    try:
+        response = client().messages.create(
+            model=SONNET,
+            max_tokens=AMENDER_MAX_TOKENS,
+            system=[
+                {"type": "text", "text": AMENDER_SYSTEM},
+                cached_text_block(
+                    "TailoredSections schema (must match exactly):\n"
+                    + json.dumps(TailoredSections.model_json_schema(), indent=2)
                 ),
-            }
-        ],
-    )
+            ],
+            tools=[_tool_definition()],
+            tool_choice={"type": "tool", "name": TOOL_NAME},
+            messages=[
+                {
+                    "role": "user",
+                    "content": AMENDER_USER.format(
+                        report=report.model_dump_json(indent=2),
+                        sections=sections.model_dump_json(indent=2),
+                    ),
+                }
+            ],
+        )
+    except APIError as e:
+        raise APIError(
+            f"Amender API call failed: {type(e).__name__}: {e}"
+        ) from e
 
-    for block in response.content:
-        if block.type == "tool_use" and block.name == TOOL_NAME:
-            return TailoredSections.model_validate(block.input)
-
-    raise RuntimeError(
-        f"Expected a `{TOOL_NAME}` tool call from the amender; got: "
-        f"{[b.type for b in response.content]}"
+    return parse_forced_tool_response(
+        response=response,
+        model=TailoredSections,
+        tool_name=TOOL_NAME,
+        stage="Amender",
+        max_tokens=AMENDER_MAX_TOKENS,
+        max_tokens_name="AMENDER_MAX_TOKENS",
     )

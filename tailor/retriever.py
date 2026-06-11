@@ -17,9 +17,12 @@ from __future__ import annotations
 
 import json
 
+from anthropic import APIError
+
 from .client import SONNET, cached_text_block, client
 from .prompts import RETRIEVER_SYSTEM, RETRIEVER_USER
 from .schemas import JDSpec, SnippetSelection
+from .tool_response import parse_forced_tool_response
 
 
 # =============================================================
@@ -87,33 +90,38 @@ def select_snippets(
     sections = _enumerate_render_hints(snippets)
     sections_block = "\n".join(f"- {hint}" for hint in sections)
 
-    response = client().messages.create(
-        model=SONNET,
-        max_tokens=RETRIEVER_MAX_TOKENS,
-        system=[
-            {"type": "text", "text": RETRIEVER_SYSTEM},
-            cached_text_block(
-                "Snippet corpus (canonical):\n" + _serialise_corpus(snippets)
-            ),
-        ],
-        tools=[_tool_definition()],
-        tool_choice={"type": "tool", "name": TOOL_NAME},
-        messages=[
-            {
-                "role": "user",
-                "content": RETRIEVER_USER.format(
-                    jd_spec=jd_spec.model_dump_json(indent=2),
-                    sections=sections_block,
+    try:
+        response = client().messages.create(
+            model=SONNET,
+            max_tokens=RETRIEVER_MAX_TOKENS,
+            system=[
+                {"type": "text", "text": RETRIEVER_SYSTEM},
+                cached_text_block(
+                    "Snippet corpus (canonical):\n" + _serialise_corpus(snippets)
                 ),
-            }
-        ],
-    )
+            ],
+            tools=[_tool_definition()],
+            tool_choice={"type": "tool", "name": TOOL_NAME},
+            messages=[
+                {
+                    "role": "user",
+                    "content": RETRIEVER_USER.format(
+                        jd_spec=jd_spec.model_dump_json(indent=2),
+                        sections=sections_block,
+                    ),
+                }
+            ],
+        )
+    except APIError as e:
+        raise APIError(
+            f"Retriever API call failed: {type(e).__name__}: {e}"
+        ) from e
 
-    for block in response.content:
-        if block.type == "tool_use" and block.name == TOOL_NAME:
-            return SnippetSelection.model_validate(block.input)
-
-    raise RuntimeError(
-        f"Expected a `{TOOL_NAME}` tool call from the retriever; got: "
-        f"{[b.type for b in response.content]}"
+    return parse_forced_tool_response(
+        response=response,
+        model=SnippetSelection,
+        tool_name=TOOL_NAME,
+        stage="Retriever",
+        max_tokens=RETRIEVER_MAX_TOKENS,
+        max_tokens_name="RETRIEVER_MAX_TOKENS",
     )

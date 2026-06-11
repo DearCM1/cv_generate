@@ -13,9 +13,12 @@ amender stage immediately downstream.
 
 from __future__ import annotations
 
+from anthropic import APIError
+
 from .client import DEFAULT_MAX_TOKENS, SONNET, client
 from .prompts import REVIEWER_SYSTEM, REVIEWER_USER
 from .schemas import JDSpec, ReviewReport, TailoredSections
+from .tool_response import parse_forced_tool_response
 
 
 # =============================================================
@@ -50,28 +53,33 @@ def review(sections: TailoredSections, jd_spec: JDSpec) -> ReviewReport:
     Call Sonnet to audit the freshly assembled tailored sections against
     the JD, forcing a structured `ReviewReport` via a single tool call.
     """
-    response = client().messages.create(
-        model=SONNET,
+    try:
+        response = client().messages.create(
+            model=SONNET,
+            max_tokens=DEFAULT_MAX_TOKENS,
+            system=REVIEWER_SYSTEM,
+            tools=[_tool_definition()],
+            tool_choice={"type": "tool", "name": TOOL_NAME},
+            messages=[
+                {
+                    "role": "user",
+                    "content": REVIEWER_USER.format(
+                        jd_spec=jd_spec.model_dump_json(indent=2),
+                        sections=sections.model_dump_json(indent=2),
+                    ),
+                }
+            ],
+        )
+    except APIError as e:
+        raise APIError(
+            f"Reviewer API call failed: {type(e).__name__}: {e}"
+        ) from e
+
+    return parse_forced_tool_response(
+        response=response,
+        model=ReviewReport,
+        tool_name=TOOL_NAME,
+        stage="Reviewer",
         max_tokens=DEFAULT_MAX_TOKENS,
-        system=REVIEWER_SYSTEM,
-        tools=[_tool_definition()],
-        tool_choice={"type": "tool", "name": TOOL_NAME},
-        messages=[
-            {
-                "role": "user",
-                "content": REVIEWER_USER.format(
-                    jd_spec=jd_spec.model_dump_json(indent=2),
-                    sections=sections.model_dump_json(indent=2),
-                ),
-            }
-        ],
-    )
-
-    for block in response.content:
-        if block.type == "tool_use" and block.name == TOOL_NAME:
-            return ReviewReport.model_validate(block.input)
-
-    raise RuntimeError(
-        f"Expected a `{TOOL_NAME}` tool call from the reviewer; got: "
-        f"{[b.type for b in response.content]}"
+        max_tokens_name="DEFAULT_MAX_TOKENS",
     )

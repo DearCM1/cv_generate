@@ -7,8 +7,8 @@ variant of each. Here we:
 1. Resolve each `(snippet_id, framing)` pick into its actual bullet text
    client-side (deterministic — no LLM call needed for lookups).
 2. Hand the resolved bullets, the snippet `roles` metadata (title /
-   organisation / dates), and the `JDSpec` to Sonnet and ask it to weave
-   them into a `TailoredSections` JSON via a forced tool call.
+   organisation / dates), and the `JDSpec` to the configured model and
+   ask it to weave them into a `TailoredSections` JSON via a forced tool call.
 
 The LLM produces only `summary`, `experience[]`, and `skills[]`. Static
 identity fields (name, contact, education, publications, leadership)
@@ -25,9 +25,12 @@ from __future__ import annotations
 import json
 import sys
 
+from anthropic import APIError
+
 from .client import SONNET, cached_text_block, client
 from .prompts import ASSEMBLER_SYSTEM, ASSEMBLER_USER
 from .schemas import JDSpec, SnippetSelection, TailoredSections
+from .tool_response import parse_forced_tool_response
 
 
 # =============================================================
@@ -131,35 +134,40 @@ def assemble_profile(
     resolved = _resolve_picks(snippets, selection)
     roles = snippets.get("roles", {})
 
-    response = client().messages.create(
-        model=SONNET,
-        max_tokens=ASSEMBLER_MAX_TOKENS,
-        system=[
-            {"type": "text", "text": ASSEMBLER_SYSTEM},
-            cached_text_block(
-                "TailoredSections schema (must match exactly):\n"
-                + json.dumps(TailoredSections.model_json_schema(), indent=2)
-            ),
-        ],
-        tools=[_tool_definition()],
-        tool_choice={"type": "tool", "name": TOOL_NAME},
-        messages=[
-            {
-                "role": "user",
-                "content": ASSEMBLER_USER.format(
-                    jd_spec=jd_spec.model_dump_json(indent=2),
-                    roles=json.dumps(roles, indent=2),
-                    snippets=json.dumps(resolved, indent=2),
+    try:
+        response = client().messages.create(
+            model=SONNET,
+            max_tokens=ASSEMBLER_MAX_TOKENS,
+            system=[
+                {"type": "text", "text": ASSEMBLER_SYSTEM},
+                cached_text_block(
+                    "TailoredSections schema (must match exactly):\n"
+                    + json.dumps(TailoredSections.model_json_schema(), indent=2)
                 ),
-            }
-        ],
-    )
+            ],
+            tools=[_tool_definition()],
+            tool_choice={"type": "tool", "name": TOOL_NAME},
+            messages=[
+                {
+                    "role": "user",
+                    "content": ASSEMBLER_USER.format(
+                        jd_spec=jd_spec.model_dump_json(indent=2),
+                        roles=json.dumps(roles, indent=2),
+                        snippets=json.dumps(resolved, indent=2),
+                    ),
+                }
+            ],
+        )
+    except APIError as e:
+        raise APIError(
+            f"Assembler API call failed: {type(e).__name__}: {e}"
+        ) from e
 
-    for block in response.content:
-        if block.type == "tool_use" and block.name == TOOL_NAME:
-            return TailoredSections.model_validate(block.input)
-
-    raise RuntimeError(
-        f"Expected a `{TOOL_NAME}` tool call from the assembler; got: "
-        f"{[b.type for b in response.content]}"
+    return parse_forced_tool_response(
+        response=response,
+        model=TailoredSections,
+        tool_name=TOOL_NAME,
+        stage="Assembler",
+        max_tokens=ASSEMBLER_MAX_TOKENS,
+        max_tokens_name="ASSEMBLER_MAX_TOKENS",
     )
