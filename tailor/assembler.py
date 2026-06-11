@@ -1,19 +1,21 @@
 """
-Step 5 of the tailor pipeline: assemble the tailored `profile.json`.
+Step 5 of the tailor pipeline: assemble the tailored CV sections.
 
 The retriever has already chosen which snippets to use and the framing
 variant of each. Here we:
 
 1. Resolve each `(snippet_id, framing)` pick into its actual bullet text
    client-side (deterministic — no LLM call needed for lookups).
-2. Hand the resolved bullets to Sonnet alongside the base profile, the
-   `JDSpec`, and the `CompanyContext`, and ask it to weave them into a
-   complete `Profile` JSON via a forced tool call.
+2. Hand the resolved bullets, the snippet `roles` metadata (title /
+   organisation / dates), the `JDSpec`, and the `CompanyContext` to
+   Sonnet and ask it to weave them into a `TailoredSections` JSON via a
+   forced tool call.
 
-Static fields (name, contact, education, publications_presentations) are
-copied through from the base profile. The model regenerates `summary`,
-each `experience[].bullets`, `skills[].text`, and `leadership` so they
-speak to the target role.
+The LLM produces only `summary`, `experience[]`, and `skills[]`. Static
+identity fields (name, contact, education, publications, leadership)
+are merged in by the orchestrator after the pipeline completes — they
+are deliberately kept out of the LLM's context so they cannot leak into
+or be rewritten by the tailored output.
 """
 # =============================================================
 # packages
@@ -26,14 +28,14 @@ import sys
 
 from .client import SONNET, cached_text_block, client
 from .prompts import ASSEMBLER_SYSTEM, ASSEMBLER_USER
-from .schemas import CompanyContext, JDSpec, Profile, SnippetSelection
+from .schemas import CompanyContext, JDSpec, SnippetSelection, TailoredSections
 
 
 # =============================================================
 # config
 # =============================================================
 
-TOOL_NAME = "record_profile"
+TOOL_NAME = "record_tailored_sections"
 ASSEMBLER_MAX_TOKENS = 8192
 
 
@@ -44,17 +46,17 @@ ASSEMBLER_MAX_TOKENS = 8192
 def _tool_definition() -> dict:
     """
     Build the Anthropic client tool definition for the recording step,
-    derived from the `Profile` Pydantic schema so the model's output is
-    guaranteed to satisfy the render_pdf contract.
+    derived from the `TailoredSections` Pydantic schema so the model's
+    output is guaranteed structurally valid.
     """
     return {
         "name": TOOL_NAME,
         "description": (
-            "Record the assembled CV profile JSON. Must match the "
-            "`profile.json` contract exactly — same field names, same "
-            "nesting. Render_pdf is the source of truth."
+            "Record the tailored CV sections JSON (summary, experience, "
+            "skills). Must match the `TailoredSections` schema exactly. "
+            "Identity fields are merged in later; do not produce them."
         ),
-        "input_schema": Profile.model_json_schema(),
+        "input_schema": TailoredSections.model_json_schema(),
     }
 
 
@@ -121,15 +123,15 @@ def assemble_profile(
     selection: SnippetSelection,
     jd_spec: JDSpec,
     company: CompanyContext,
-    base: Profile,
     snippets: dict,
-) -> Profile:
+) -> TailoredSections:
     """
-    Compose the final `Profile` JSON. Schema is enforced both by the
+    Compose the tailored CV sections. Schema is enforced both by the
     forced tool call (input_schema) and by Pydantic validation of the
     returned object.
     """
     resolved = _resolve_picks(snippets, selection)
+    roles = snippets.get("roles", {})
 
     response = client().messages.create(
         model=SONNET,
@@ -137,8 +139,8 @@ def assemble_profile(
         system=[
             {"type": "text", "text": ASSEMBLER_SYSTEM},
             cached_text_block(
-                "Profile schema (must match exactly):\n"
-                + json.dumps(Profile.model_json_schema(), indent=2)
+                "TailoredSections schema (must match exactly):\n"
+                + json.dumps(TailoredSections.model_json_schema(), indent=2)
             ),
         ],
         tools=[_tool_definition()],
@@ -149,8 +151,8 @@ def assemble_profile(
                 "content": ASSEMBLER_USER.format(
                     jd_spec=jd_spec.model_dump_json(indent=2),
                     company=company.model_dump_json(indent=2),
+                    roles=json.dumps(roles, indent=2),
                     snippets=json.dumps(resolved, indent=2),
-                    base=base.model_dump_json(indent=2),
                 ),
             }
         ],
@@ -158,7 +160,7 @@ def assemble_profile(
 
     for block in response.content:
         if block.type == "tool_use" and block.name == TOOL_NAME:
-            return Profile.model_validate(block.input)
+            return TailoredSections.model_validate(block.input)
 
     raise RuntimeError(
         f"Expected a `{TOOL_NAME}` tool call from the assembler; got: "

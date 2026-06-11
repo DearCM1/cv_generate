@@ -112,6 +112,32 @@ class Skill(BaseModel):
     text: str
 
 
+class Identity(BaseModel):
+    """
+    Static identity fields that are constant across every tailored
+    render. Loaded from `tailor/data/identity.json` and merged
+    client-side into the final `Profile` — the LLM never sees these.
+    """
+    name: str
+    credential: str
+    contact: Contact
+    education: list[Education]
+    publications_presentations: list[PublicationPresentation]
+    leadership: str
+
+
+class TailoredSections(BaseModel):
+    """
+    The only fields the LLM produces. The assembler emits this from
+    the JD spec, company context, and retrieved snippets; the reviewer
+    and amender operate on it; the orchestrator merges it with
+    `Identity` to form the final `Profile`.
+    """
+    summary: str
+    experience: list[ExperienceEntry]
+    skills: list[Skill]
+
+
 class Profile(BaseModel):
     """
     Main data object which renders into Jinja template.

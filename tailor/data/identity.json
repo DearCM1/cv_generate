@@ -1,0 +1,41 @@
+{
+  "name": "Calum Dear",
+  "credential": "Ph.D. UCL",
+  "contact": {
+    "location": "Bristol, UK",
+    "phone": "+44 7540 347550",
+    "email": "calumdear@gmail.com",
+    "linkedin": {
+      "label": "/in/calumdear/",
+      "url": "https://www.linkedin.com/in/calumdear/"
+    }
+  },
+  "education": [
+    {
+      "institution": "University College London (UCL)",
+      "qualification": "Ph.D., Electronic & Electrical Engineering",
+      "dates": "2021 — 2025"
+    },
+    {
+      "institution": "Cardiff University",
+      "qualification": "MSc, Compound Semiconductor Physics (<strong>Distinction</strong>)",
+      "dates": "2020 — 2021"
+    },
+    {
+      "institution": "Cardiff University",
+      "qualification": "BSc, Physics (<strong>First Class Honours</strong>)",
+      "dates": "2016 — 2020"
+    }
+  ],
+  "publications_presentations": [
+    {
+      "label": "Publications",
+      "text": "First-author papers in APL Materials and Journal of Physics D (see <a href=\"https://orcid.org/\">ORCID</a>, <a href=\"https://scholar.google.com/\">Scholar</a>)."
+    },
+    {
+      "label": "Conferences",
+      "text": "Presented at 11 academic conferences to audiences of 100+ (notably NAMBE 2024, Boston, US and ICMBE 2024, Matsue, Japan)."
+    }
+  ],
+  "leadership": "I have consistently sought positions of responsibility. I served as a student representative throughout my BSc, MSc, and Ph.D., and played a central role in the undergraduate mentoring programme, eventually coordinating the mentoring provision across the entire college. I also spent a year managing a high-volume cocktail bar, leading staff and overseeing day-to-day operations."
+}

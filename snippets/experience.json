@@ -21,7 +21,7 @@
       ],
       "organisation": "Prime Appliances Ltd.",
       "dates": "Sept 2025 – May 2026",
-      "context": "Nationwide e-commerce scale-up. Owns data integration, pricing intelligence, and LLM-enabled automation across Shopify, supplier feeds, marketplaces, and fulfilment partners."
+      "context": "Nationwide e-commerce scale-up. Owns data governance, LLM-enabled automation, and data pipelines across Shopify, supplier feeds, marketplaces, and fulfilment partners."
     },
     "phd_researcher": {
       "title_variants": [
@@ -363,7 +363,7 @@
       "framing": "physics-research",
       "skills": [
         "Lumerical MODE",
-        "FDTD",
+        "Lumerical FDTD",
         "optical modelling",
         "laser structure modelling",
         "simulation-fabrication-characterisation feedback"

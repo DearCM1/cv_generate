@@ -16,7 +16,7 @@ import json
 
 from .client import SONNET, cached_text_block, client
 from .prompts import AMENDER_SYSTEM, AMENDER_USER
-from .schemas import Profile, ReviewReport
+from .schemas import ReviewReport, TailoredSections
 
 
 # =============================================================
@@ -34,24 +34,28 @@ AMENDER_MAX_TOKENS = 8192
 def _tool_definition() -> dict:
     """
     Build the Anthropic client tool definition for the recording step.
-    The output schema is `Profile` — identical to the assembler — so the
-    amender's result is drop-in compatible with the renderer.
+    The output schema is `TailoredSections` — identical to the
+    assembler — so the amender's result remains a partial that the
+    orchestrator can merge with `Identity` to form the final profile.
     """
     return {
         "name": TOOL_NAME,
         "description": (
-            "Record the revised CV profile JSON after applying the "
-            "review report. Preserve all unaffected fields verbatim."
+            "Record the revised tailored sections JSON after applying "
+            "the review report. Preserve all unaffected fields verbatim."
         ),
-        "input_schema": Profile.model_json_schema(),
+        "input_schema": TailoredSections.model_json_schema(),
     }
 
 
-def amend(profile: Profile, report: ReviewReport) -> Profile:
+def amend(
+    sections: TailoredSections,
+    report: ReviewReport,
+) -> TailoredSections:
     """
-    Apply the review report to the profile in a single Sonnet call.
-    Schema is enforced via the forced tool call and re-validated by
-    Pydantic on the way out.
+    Apply the review report to the tailored sections in a single Sonnet
+    call. Schema is enforced via the forced tool call and re-validated
+    by Pydantic on the way out.
     """
     response = client().messages.create(
         model=SONNET,
@@ -59,8 +63,8 @@ def amend(profile: Profile, report: ReviewReport) -> Profile:
         system=[
             {"type": "text", "text": AMENDER_SYSTEM},
             cached_text_block(
-                "Profile schema (must match exactly):\n"
-                + json.dumps(Profile.model_json_schema(), indent=2)
+                "TailoredSections schema (must match exactly):\n"
+                + json.dumps(TailoredSections.model_json_schema(), indent=2)
             ),
         ],
         tools=[_tool_definition()],
@@ -70,7 +74,7 @@ def amend(profile: Profile, report: ReviewReport) -> Profile:
                 "role": "user",
                 "content": AMENDER_USER.format(
                     report=report.model_dump_json(indent=2),
-                    profile=profile.model_dump_json(indent=2),
+                    sections=sections.model_dump_json(indent=2),
                 ),
             }
         ],
@@ -78,7 +82,7 @@ def amend(profile: Profile, report: ReviewReport) -> Profile:
 
     for block in response.content:
         if block.type == "tool_use" and block.name == TOOL_NAME:
-            return Profile.model_validate(block.input)
+            return TailoredSections.model_validate(block.input)
 
     raise RuntimeError(
         f"Expected a `{TOOL_NAME}` tool call from the amender; got: "

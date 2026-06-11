@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from .client import DEFAULT_MAX_TOKENS, SONNET, client
 from .prompts import REVIEWER_SYSTEM, REVIEWER_USER
-from .schemas import JDSpec, Profile, ReviewReport
+from .schemas import JDSpec, ReviewReport, TailoredSections
 
 
 # =============================================================
@@ -45,10 +45,10 @@ def _tool_definition() -> dict:
     }
 
 
-def review(profile: Profile, jd_spec: JDSpec) -> ReviewReport:
+def review(sections: TailoredSections, jd_spec: JDSpec) -> ReviewReport:
     """
-    Call Sonnet to audit a freshly assembled profile against the JD,
-    forcing a structured `ReviewReport` via a single tool call.
+    Call Sonnet to audit the freshly assembled tailored sections against
+    the JD, forcing a structured `ReviewReport` via a single tool call.
     """
     response = client().messages.create(
         model=SONNET,
@@ -61,7 +61,7 @@ def review(profile: Profile, jd_spec: JDSpec) -> ReviewReport:
                 "role": "user",
                 "content": REVIEWER_USER.format(
                     jd_spec=jd_spec.model_dump_json(indent=2),
-                    profile=profile.model_dump_json(indent=2),
+                    sections=sections.model_dump_json(indent=2),
                 ),
             }
         ],

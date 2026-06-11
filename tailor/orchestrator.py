@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .inputs import load_text
-from .schemas import Profile
+from .schemas import Identity, Profile, TailoredSections
 
 
 # =============================================================
@@ -21,8 +21,9 @@ from .schemas import Profile
 # =============================================================
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PKG_DIR = Path(__file__).resolve().parent
 SNIPPETS_PATH = PROJECT_ROOT / "snippets" / "experience.json"
-BASE_PROFILE_PATH = PROJECT_ROOT / "render_pdf" / "data" / "profile.json"
+IDENTITY_PATH = PKG_DIR / "data" / "identity.json"
 OUTPUT_ROOT = PROJECT_ROOT / "output"
 
 
@@ -42,7 +43,34 @@ def _create_run_dir() -> Path:
     return run_dir
 
 
-def tailor(jd_path: Path, company_path: Path, out_path: Path) -> Path:
+def _merge_identity(
+    identity: Identity,
+    sections: TailoredSections,
+) -> Profile:
+    """
+    Deterministically merge the static identity fields with the
+    LLM-produced tailored sections to form the final `Profile`. The
+    LLM never sees identity values, so this is the only place they
+    enter the rendered output.
+    """
+    return Profile(
+        name=identity.name,
+        credential=identity.credential,
+        contact=identity.contact,
+        summary=sections.summary,
+        education=identity.education,
+        experience=sections.experience,
+        publications_presentations=identity.publications_presentations,
+        leadership=identity.leadership,
+        skills=sections.skills,
+    )
+
+
+def tailor(
+    jd_path: Path,
+    company_path: Path,
+    out_path:
+Path) -> Path:
     """
     Run the full pipeline:
     1. Load data
@@ -72,6 +100,7 @@ def tailor(jd_path: Path, company_path: Path, out_path: Path) -> Path:
     run_dir = _create_run_dir()
     jd_text = load_text(jd_path)
     company_text = load_text(company_path)
+    identity = Identity.model_validate_json(IDENTITY_PATH.read_text())
 
     # Step 2
     jd_spec = jd_analyser.analyse_jd(jd_text)
@@ -87,19 +116,23 @@ def tailor(jd_path: Path, company_path: Path, out_path: Path) -> Path:
     (run_dir / "selection.json").write_text(selection.model_dump_json(indent=2))
 
     # Step 5
-    base = Profile.model_validate_json(BASE_PROFILE_PATH.read_text())
-    profile = assembler.assemble_profile(selection, jd_spec, company, base, snippets)
-    (run_dir / "profile_draft.json").write_text(profile.model_dump_json(indent=2))
+    sections = assembler.assemble_profile(selection, jd_spec, company, snippets)
+    (run_dir / "sections_draft.json").write_text(
+        sections.model_dump_json(indent=2)
+    )
 
     # Step 6
-    report = reviewer.review(profile, jd_spec)
+    report = reviewer.review(sections, jd_spec)
     (run_dir / "review.json").write_text(report.model_dump_json(indent=2))
 
     # Step 7
-    final = amender.amend(profile, report)
+    sections = amender.amend(sections, report)
+    (run_dir / "sections.json").write_text(sections.model_dump_json(indent=2))
+
+    # Step 8
+    final = _merge_identity(identity, sections)
     final_path = run_dir / "profile.json"
     final_path.write_text(final.model_dump_json(indent=2))
 
-    # Step 8
     out_path.parent.mkdir(parents=True, exist_ok=True)
     return render(final_path, out_path)
