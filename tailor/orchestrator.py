@@ -12,8 +12,17 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from uuid import UUID
+from uuid6 import uuid7
+
 from .inputs import load_text
-from .schemas import Identity, Profile, TailoredSections
+from .schemas import (
+    Identity,
+    Metrics,
+    Profile,
+    RunTimeMetrics,
+    TailoredSections,
+)
 
 
 # =============================================================
@@ -31,13 +40,13 @@ OUTPUT_ROOT = PROJECT_ROOT / "output"
 # functions
 # =============================================================
 
-def _create_run_dir() -> Path:
+def _create_run_dir(run_id: UUID) -> Path:
     """
-    Creates new subdirectory to save the output file and
-    debugging within the output directory.
+    Create the per-run subdirectory under `output/`, named after the
+    run's uuid7 so the directory name doubles as the eventual public
+    `calumdear.dev/cv/<uuid7>` URL slug.
     """
-    time_stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    run_dir = OUTPUT_ROOT / f"run_{time_stamp}"
+    run_dir = OUTPUT_ROOT / f"run_{run_id}"
     run_dir.mkdir(parents=True, exist_ok=True)
 
     return run_dir
@@ -77,8 +86,10 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
     6. Amend CV
     7. Finish
 
-    Intermediate stage outputs are dumped under `output/run_<time_stamp>/` so each
-    stage can be inspected in isolation when debugging.
+    Intermediate stage outputs are dumped under `output/run_<uuid7>/` so
+    each stage can be inspected in isolation when debugging. A master
+    `metrics.json` is also written, capturing per-call timing, token
+    usage, and dollar cost for the public-facing run page.
 
     Company context is intentionally not researched — JDs typically embed
     the business / tech / values signals the downstream stages need.
@@ -94,32 +105,59 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
     )
 
     # Step 1
-    run_dir = _create_run_dir()
+    run_id = uuid7()
+    run_start = datetime.now(timezone.utc)
+    run_dir = _create_run_dir(run_id)
     jd_text = load_text(jd_path)
     identity = Identity.model_validate_json(IDENTITY_PATH.read_text())
 
     # Step 2
-    jd_spec = jd_analyser.analyse_jd(jd_text)
+    jd_spec, jd_metrics = jd_analyser.analyse_jd(jd_text)
     (run_dir / "jd_spec.json").write_text(jd_spec.model_dump_json(indent=2))
 
     # Step 3
     snippets = json.loads(SNIPPETS_PATH.read_text())
-    selection = retriever.select_snippets(snippets, jd_spec)
+    selection, sel_metrics = retriever.select_snippets(snippets, jd_spec)
     (run_dir / "selection.json").write_text(selection.model_dump_json(indent=2))
 
     # Step 4
-    sections = assembler.assemble_profile(selection, jd_spec, snippets)
+    sections, asm_metrics = assembler.assemble_profile(
+        selection, jd_spec, snippets,
+    )
     (run_dir / "sections_draft.json").write_text(
         sections.model_dump_json(indent=2)
     )
 
     # Step 5
-    report = reviewer.review(sections, jd_spec)
+    report, rev_metrics = reviewer.review(sections, jd_spec)
     (run_dir / "review.json").write_text(report.model_dump_json(indent=2))
 
     # Step 6
-    sections = amender.amend(sections, report)
+    sections, amd_metrics = amender.amend(sections, report)
     (run_dir / "sections.json").write_text(sections.model_dump_json(indent=2))
+
+    # Capture overall runtime and dump the master metrics object before
+    # the client-side merge / render — both of those are deterministic
+    # and not worth metering for the website page.
+    run_finish = datetime.now(timezone.utc)
+    metrics = Metrics(
+        id=run_id,
+        runtime=RunTimeMetrics(
+            start=run_start,
+            finish=run_finish,
+            elapsed=run_finish - run_start,
+        ),
+        model_metrics=[
+            jd_metrics,
+            sel_metrics,
+            asm_metrics,
+            rev_metrics,
+            amd_metrics,
+        ],
+        job_spec=jd_spec,
+        snippet_selection=selection,
+    )
+    (run_dir / "metrics.json").write_text(metrics.model_dump_json(indent=2))
 
     # Step 7
     final = _merge_identity(identity, sections)

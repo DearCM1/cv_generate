@@ -27,9 +27,9 @@ import sys
 
 from anthropic import APIError
 
-from .client import SONNET, cached_text_block, client
+from .client import SONNET, cached_text_block, call_model
 from .prompts import ASSEMBLER_SYSTEM, ASSEMBLER_USER
-from .schemas import JDSpec, SnippetSelection, TailoredSections
+from .schemas import JDSpec, ModelMetrics, SnippetSelection, TailoredSections
 from .tool_response import parse_forced_tool_response
 
 
@@ -125,17 +125,18 @@ def assemble_profile(
     selection: SnippetSelection,
     jd_spec: JDSpec,
     snippets: dict,
-) -> TailoredSections:
+) -> tuple[TailoredSections, ModelMetrics]:
     """
     Compose the tailored CV sections. Schema is enforced both by the
     forced tool call (input_schema) and by Pydantic validation of the
-    returned object.
+    returned object. Returns the validated sections alongside this
+    call's `ModelMetrics`.
     """
     resolved = _resolve_picks(snippets, selection)
     roles = snippets.get("roles", {})
 
     try:
-        response = client().messages.create(
+        response, metrics = call_model(
             model=SONNET,
             max_tokens=ASSEMBLER_MAX_TOKENS,
             system=[
@@ -163,7 +164,7 @@ def assemble_profile(
             f"Assembler API call failed: {type(e).__name__}: {e}"
         ) from e
 
-    return parse_forced_tool_response(
+    sections = parse_forced_tool_response(
         response=response,
         model=TailoredSections,
         tool_name=TOOL_NAME,
@@ -171,3 +172,5 @@ def assemble_profile(
         max_tokens=ASSEMBLER_MAX_TOKENS,
         max_tokens_name="ASSEMBLER_MAX_TOKENS",
     )
+
+    return sections, metrics

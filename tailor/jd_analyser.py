@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from anthropic import APIError
 
-from .client import DEFAULT_MAX_TOKENS, HAIKU, client
+from .client import DEFAULT_MAX_TOKENS, HAIKU, call_model
 from .prompts import JD_ANALYSER_SYSTEM, JD_ANALYSER_USER
-from .schemas import JDSpec
+from .schemas import JDSpec, ModelMetrics
 from .tool_response import parse_forced_tool_response
 
 
@@ -42,13 +42,14 @@ def _tool_definition() -> dict:
     }
 
 
-def analyse_jd(jd_text: str) -> JDSpec:
+def analyse_jd(jd_text: str) -> tuple[JDSpec, ModelMetrics]:
     """
     Call Claude with the JD text and force it to emit a `JDSpec` via a
-    single tool call. Returns the validated Pydantic model.
+    single tool call. Returns the validated Pydantic model alongside a
+    `ModelMetrics` describing this call's timing, token usage, and cost.
     """
     try:
-        response = client().messages.create(
+        response, metrics = call_model(
             model=HAIKU,
             max_tokens=DEFAULT_MAX_TOKENS,
             system=JD_ANALYSER_SYSTEM,
@@ -66,7 +67,7 @@ def analyse_jd(jd_text: str) -> JDSpec:
             f"JD Analyser API call failed: {type(e).__name__}: {e}"
         ) from e
 
-    return parse_forced_tool_response(
+    jd_spec = parse_forced_tool_response(
         response=response,
         model=JDSpec,
         tool_name=TOOL_NAME,
@@ -74,3 +75,5 @@ def analyse_jd(jd_text: str) -> JDSpec:
         max_tokens=DEFAULT_MAX_TOKENS,
         max_tokens_name="DEFAULT_MAX_TOKENS",
     )
+
+    return jd_spec, metrics

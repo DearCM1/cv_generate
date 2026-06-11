@@ -16,9 +16,9 @@ import json
 
 from anthropic import APIError
 
-from .client import SONNET, cached_text_block, client
+from .client import SONNET, cached_text_block, call_model
 from .prompts import AMENDER_SYSTEM, AMENDER_USER
-from .schemas import ReviewReport, TailoredSections
+from .schemas import ModelMetrics, ReviewReport, TailoredSections
 from .tool_response import parse_forced_tool_response
 
 
@@ -54,14 +54,15 @@ def _tool_definition() -> dict:
 def amend(
     sections: TailoredSections,
     report: ReviewReport,
-) -> TailoredSections:
+) -> tuple[TailoredSections, ModelMetrics]:
     """
     Apply the review report to the tailored sections in a single model call.
     Schema is enforced via the forced tool call and re-validated by Pydantic
-    on the way out.
+    on the way out. Returns the amended sections alongside this call's
+    `ModelMetrics`.
     """
     try:
-        response = client().messages.create(
+        response, metrics = call_model(
             model=SONNET,
             max_tokens=AMENDER_MAX_TOKENS,
             system=[
@@ -88,7 +89,7 @@ def amend(
             f"Amender API call failed: {type(e).__name__}: {e}"
         ) from e
 
-    return parse_forced_tool_response(
+    amended = parse_forced_tool_response(
         response=response,
         model=TailoredSections,
         tool_name=TOOL_NAME,
@@ -96,3 +97,5 @@ def amend(
         max_tokens=AMENDER_MAX_TOKENS,
         max_tokens_name="AMENDER_MAX_TOKENS",
     )
+
+    return amended, metrics

@@ -15,9 +15,9 @@ from __future__ import annotations
 
 from anthropic import APIError
 
-from .client import DEFAULT_MAX_TOKENS, SONNET, client
+from .client import DEFAULT_MAX_TOKENS, SONNET, call_model
 from .prompts import REVIEWER_SYSTEM, REVIEWER_USER
-from .schemas import JDSpec, ReviewReport, TailoredSections
+from .schemas import JDSpec, ModelMetrics, ReviewReport, TailoredSections
 from .tool_response import parse_forced_tool_response
 
 
@@ -48,13 +48,17 @@ def _tool_definition() -> dict:
     }
 
 
-def review(sections: TailoredSections, jd_spec: JDSpec) -> ReviewReport:
+def review(
+    sections: TailoredSections,
+    jd_spec: JDSpec,
+) -> tuple[ReviewReport, ModelMetrics]:
     """
     Call Sonnet to audit the freshly assembled tailored sections against
     the JD, forcing a structured `ReviewReport` via a single tool call.
+    Returns the validated report alongside this call's `ModelMetrics`.
     """
     try:
-        response = client().messages.create(
+        response, metrics = call_model(
             model=SONNET,
             max_tokens=DEFAULT_MAX_TOKENS,
             system=REVIEWER_SYSTEM,
@@ -75,7 +79,7 @@ def review(sections: TailoredSections, jd_spec: JDSpec) -> ReviewReport:
             f"Reviewer API call failed: {type(e).__name__}: {e}"
         ) from e
 
-    return parse_forced_tool_response(
+    report = parse_forced_tool_response(
         response=response,
         model=ReviewReport,
         tool_name=TOOL_NAME,
@@ -83,3 +87,5 @@ def review(sections: TailoredSections, jd_spec: JDSpec) -> ReviewReport:
         max_tokens=DEFAULT_MAX_TOKENS,
         max_tokens_name="DEFAULT_MAX_TOKENS",
     )
+
+    return report, metrics

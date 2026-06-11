@@ -19,9 +19,9 @@ import json
 
 from anthropic import APIError
 
-from .client import SONNET, cached_text_block, client
+from .client import SONNET, cached_text_block, call_model
 from .prompts import RETRIEVER_SYSTEM, RETRIEVER_USER
-from .schemas import JDSpec, SnippetSelection
+from .schemas import JDSpec, ModelMetrics, SnippetSelection
 from .tool_response import parse_forced_tool_response
 
 
@@ -82,16 +82,17 @@ def _serialise_corpus(snippets: dict) -> str:
 def select_snippets(
     snippets: dict,
     jd_spec: JDSpec,
-) -> SnippetSelection:
+) -> tuple[SnippetSelection, ModelMetrics]:
     """
     Ask the model to choose snippets per `render_hint` section, forcing
-    a structured response via the `record_snippet_selection` tool.
+    a structured response via the `record_snippet_selection` tool. Returns
+    the validated selection alongside this call's `ModelMetrics`.
     """
     sections = _enumerate_render_hints(snippets)
     sections_block = "\n".join(f"- {hint}" for hint in sections)
 
     try:
-        response = client().messages.create(
+        response, metrics = call_model(
             model=SONNET,
             max_tokens=RETRIEVER_MAX_TOKENS,
             system=[
@@ -117,7 +118,7 @@ def select_snippets(
             f"Retriever API call failed: {type(e).__name__}: {e}"
         ) from e
 
-    return parse_forced_tool_response(
+    selection = parse_forced_tool_response(
         response=response,
         model=SnippetSelection,
         tool_name=TOOL_NAME,
@@ -125,3 +126,5 @@ def select_snippets(
         max_tokens=RETRIEVER_MAX_TOKENS,
         max_tokens_name="RETRIEVER_MAX_TOKENS",
     )
+
+    return selection, metrics
