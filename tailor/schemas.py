@@ -163,8 +163,6 @@ class ReviewReport(BaseModel):
 # metric schemas
 # =============================================================
 
-#TODO Review whether this is best data structure for metrics
-
 class CallTimeMetrics(BaseModel):
     """
     Time taken per LLM call.
@@ -184,12 +182,18 @@ class RunTimeMetrics(BaseModel):
 
 class TokenCost(BaseModel):
     """
-    Token cost breakdown per LLM call.
+    Token cost breakdown per LLM call. `tokens_in` is non-cached prompt
+    tokens only (matches Anthropic's `usage.input_tokens`); cache reads
+    and writes are tracked separately because they are billed at very
+    different rates (cache read ~0.1x input, cache write ~1.25x input).
+    `tokens_reasoning` stays at 0 until a stage opts into extended thinking.
     """
     tokens_total: int
     tokens_in: int
     tokens_out: int
     tokens_reasoning: int
+    tokens_cache_creation: int
+    tokens_cache_read: int
 
 
 class ModelCost(BaseModel):
