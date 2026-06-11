@@ -4,7 +4,10 @@
   "contact": {
     "location": "Bristol, UK",
     "phone": "+44 7540 347550",
-    "email": "calumdear@gmail.com",
+    "email": {
+      "label": "calumdear@gmail.com",
+      "url": "mailto:calumdear@gmail.com"
+    },
     "linkedin": {
       "label": "/in/calumdear/",
       "url": "https://www.linkedin.com/in/calumdear/"

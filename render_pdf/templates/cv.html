@@ -9,7 +9,8 @@
     <header class="header">
         <h1 class="name">{{ name }}{% if credential %} <span class="credential">{{ credential }}</span>{% endif %}</h1>
         <p class="contact">
-            {{ contact.location }} | {{ contact.phone }} | {{ contact.email }}
+            {{ contact.location }} | {{ contact.phone }}
+            {%- if contact.email %} | <a href="{{ contact.email.url }}">{{ contact.email.label }}</a>{% endif %}
             {%- if contact.linkedin %} | <a href="{{ contact.linkedin.url }}">{{ contact.linkedin.label }}</a>{% endif %}
         </p>
         <p class="summary">{{ summary }}</p>

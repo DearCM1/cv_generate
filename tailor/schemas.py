@@ -70,10 +70,15 @@ class LinkedIn(BaseModel):
     url: str
 
 
+class Email(BaseModel):
+    label: str
+    url: str
+
+
 class Contact(BaseModel):
     location: str
     phone: str
-    email: str
+    email: Email
     linkedin: LinkedIn
 
 
