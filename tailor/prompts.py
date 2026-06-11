@@ -50,7 +50,7 @@ Return a `SnippetSelection` mapping each render_hint to an ordered list of \
 # Step 4: Assembler / CV Builder
 # =============================================================
 
-ASSEMBLER_SYSTEM = """You assemble the tailored sections of a CV — only \
+ASSEMBLER_SYSTEM = """You assemble the tailored sections of a CV, only \
 `summary`, `experience[]`, and `skills[]`. Static identity fields (name, \
 contact, education, publications, leadership) are merged in later and are \
 not your concern. The output schema is in the next system block; match it \
@@ -60,20 +60,35 @@ For each role you include in `experience[]`:
  - Take `title`, `organisation`, and `dates` verbatim from the supplied \
 `roles` metadata (pick a title from that role's `title_variants` that best \
 fits the JD).
- - Compose `bullets` from the chosen snippets only — preserve their numbers \
-and substantive claims; light edits for flow are fine, but do not fabricate \
-metrics or invent experience that is not in the snippets.
+ - Output no more than 4 bullets.
+ - Treat the chosen snippets as relevant context, not mandatory text to fully \
+ exhaust. Use only the points that best support the JD and omit anything that \
+ does not strengthen the role.
+ - Compose `bullets` from the chosen snippets only; preserve their numbers \
+ and substantive claims. Light edits for flow are fine, but do not fabricate \
+ metrics or invent experience that is not in the snippets.
+ - You may use reasonably synonymous wording or directly implied adjacent \
+ experience when it is a normal operational consequence of the snippet evidence. \
+ For example, experience deploying AWS Lambda functions can reasonably imply \
+ familiarity with surrounding AWS tooling such as IAM, EventBridge, the AWS \
+ Console, or SAM CLI. Do not stretch this into unrelated or speculative claims.
 
 For `skills[]`, draw label/text from the skill snippets selected for the \
-`skills[]` render hint; keep to 4 or fewer groups.
+`skills[]` render hint; keep to 4 or fewer groups. Do not add skills that are \
+unsupported by the snippets, except where a skill is reasonably synonymous with \
+or directly implied by the evidenced work.
 
-For `summary`, write 2-3 sentences that speak to the JD and naturally \
+For `summary`, write no more than 2 sentences that speak to the JD and \
+naturally \
 include the ATS keywords, grounded in the supplied snippets. JDs frequently \
-embed company context (business focus, values, tech stack) — lean on that \
+embed company context (business focus, values, tech stack), lean on that \
 when phrasing the summary so it speaks to the employer's environment.
 
-HTML is allowed only in `skills[].text`; keep tags simple (`<strong>`). \
-No script tags."""
+HTML is allowed only where needed for safe text rendering or notation, such as \
+escaped symbols and, if genuinely necessary, `<sup>` or `<sub>`. Do not use \
+HTML for visual formatting such as bold, strong, italic, or emphasis tags. No \
+script tags. Avoid em dashes and en dashes; use commas, full stops, or plain \
+hyphens only when essential."""
 
 ASSEMBLER_USER = """JD spec:
 {jd_spec}
@@ -94,7 +109,9 @@ REVIEWER_SYSTEM = """You critique the tailored sections of a CV (summary, \
 experience, skills) against a JD spec. Identify missing ATS keywords, weak \
 or generic bullets, tone mismatches, and the risk of overflowing one A4 \
 page. Be specific: cite section and bullet index (e.g. \
-'experience[0].bullets', index 2)."""
+'experience[0].bullets', index 2). Treat these as hard constraints: summary \
+must be no more than 2 sentences, each experience role must have no more than \
+4 bullets, and em dashes or en dashes should be avoided."""
 
 REVIEWER_USER = """JD spec:
 {jd_spec}
@@ -109,8 +126,17 @@ Tailored sections to review:
 AMENDER_SYSTEM = """You apply a `ReviewReport` to the tailored sections of \
 a CV (summary, experience, skills) and return the revised sections JSON. \
 Make only the changes the report requests; preserve all unaffected fields \
-verbatim. HTML is allowed only in `skills[].text`; keep tags simple \
-(`<strong>`). No script tags."""
+verbatim. HTML is allowed only where needed for safe text rendering or \
+notation, such as escaped symbols and, if genuinely necessary, `<sup>` or \
+`<sub>`. Do not use HTML for visual formatting such as bold, strong, italic, \
+or emphasis tags. No script tags. Preserve these constraints in the revised \
+output: summary must be no more than 2 sentences, each experience role must \
+have no more than 4 bullets, chosen snippets are relevant context rather than \
+text that must all be used, and em dashes or en dashes should be avoided. Do \
+not add unsupported skills or experience, but reasonably synonymous wording or \
+directly implied adjacent experience is allowed where the snippet evidence \
+clearly supports it, such as AWS Lambda work implying nearby AWS operational \
+tooling."""
 
 AMENDER_USER = """Review report:
 {report}
