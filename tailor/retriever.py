@@ -1,9 +1,9 @@
 """
-Step 4 of the tailor pipeline: snippet retrieval.
+Step 3 of the tailor pipeline: snippet retrieval.
 
-Given a `JDSpec` and `CompanyContext`, ask Sonnet to pick the experience
-snippets (and the framing variant of each) that best fit the role, grouped
-by the `render_hint` field that determines which section of `profile.json`
+Given a `JDSpec`, ask Sonnet to pick the experience snippets (and the
+framing variant of each) that best fit the role, grouped by the
+`render_hint` field that determines which section of `profile.json`
 they ultimately render into.
 
 The snippet corpus is passed in a cached system block so the same content
@@ -19,7 +19,7 @@ import json
 
 from .client import SONNET, cached_text_block, client
 from .prompts import RETRIEVER_SYSTEM, RETRIEVER_USER
-from .schemas import CompanyContext, JDSpec, SnippetSelection
+from .schemas import JDSpec, SnippetSelection
 
 
 # =============================================================
@@ -79,7 +79,6 @@ def _serialise_corpus(snippets: dict) -> str:
 def select_snippets(
     snippets: dict,
     jd_spec: JDSpec,
-    company: CompanyContext
 ) -> SnippetSelection:
     """
     Ask the model to choose snippets per `render_hint` section, forcing
@@ -104,7 +103,6 @@ def select_snippets(
                 "role": "user",
                 "content": RETRIEVER_USER.format(
                     jd_spec=jd_spec.model_dump_json(indent=2),
-                    company=company.model_dump_json(indent=2),
                     sections=sections_block,
                 ),
             }

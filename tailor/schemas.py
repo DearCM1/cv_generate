@@ -53,18 +53,6 @@ class JDSpec(BaseModel):
     framing_hint: Framing
 
 
-class CompanyContext(BaseModel):
-    name: str
-    business_focus: str
-    tech_signals: list[str]
-    values: list[str]
-    recent_initiatives: list[str]
-    sources: list[str] = Field(
-        default_factory=list,
-        description="URLs surfaced by web_search that informed this context.",
-    )
-
-
 class SnippetPick(BaseModel):
     snippet_id: str
     framing: Framing
@@ -129,9 +117,9 @@ class Identity(BaseModel):
 class TailoredSections(BaseModel):
     """
     The only fields the LLM produces. The assembler emits this from
-    the JD spec, company context, and retrieved snippets; the reviewer
-    and amender operate on it; the orchestrator merges it with
-    `Identity` to form the final `Profile`.
+    the JD spec and the retrieved snippets; the reviewer and amender
+    operate on it; the orchestrator merges it with `Identity` to form
+    the final `Profile`.
     """
     summary: str
     experience: list[ExperienceEntry]
@@ -224,5 +212,4 @@ class Metrics(BaseModel):
     runtime: RunTimeMetrics
     model_metrics: list[ModelMetrics]
     job_spec: JDSpec
-    company_context: CompanyContext
     snippet_selection: SnippetSelection

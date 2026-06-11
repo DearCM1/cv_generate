@@ -1,5 +1,5 @@
 """
-File loaders for job-description and company-profile inputs.
+File loader for job-description inputs.
 """
 # =============================================================
 # packages

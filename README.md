@@ -1,27 +1,30 @@
 # cv_generate
 
-Generate tailored, print-ready CVs from a job description and company
-profile. A RAG pipeline (`tailor/`) selects experience snippets, picks the
-framing that matches the role, assembles them into a profile JSON, and
-hands off to a Jinja2 + WeasyPrint renderer (`render_pdf/`) that produces a
-single-page A4 PDF.
+Generate tailored, print-ready CVs from a job description. A RAG pipeline
+(`tailor/`) selects experience snippets, picks the framing that matches the
+role, assembles them into a profile JSON, and hands off to a Jinja2 +
+WeasyPrint renderer (`render_pdf/`) that produces a single-page A4 PDF.
+
+Company context isn't researched separately — JDs typically embed the
+business / tech / values signals the downstream stages need, and the
+prompts are written to lean on that embedded context.
 
 ## Structure
 
 ```
 cv_generate/
 ├── tailor/                     RAG + LLM tailoring pipeline
-│   ├── orchestrator.py         Wires the six pipeline stages
+│   ├── orchestrator.py         Wires the pipeline stages
 │   ├── jd_analyser.py          Step 2 — JD → JDSpec (ATS keywords, tone)
-│   ├── company_researcher.py   Step 3 — uses hosted web_search
-│   ├── retriever.py            Step 4 — picks snippets per render_hint
-│   ├── assembler.py            Step 5 — builds the tailored Profile
-│   ├── reviewer.py             Step 6 — critiques vs the JD
-│   ├── amender.py              Step 7 — applies the review
+│   ├── retriever.py            Step 3 — picks snippets per render_hint
+│   ├── assembler.py            Step 4 — builds the tailored sections
+│   ├── reviewer.py             Step 5 — critiques vs the JD
+│   ├── amender.py              Step 6 — applies the review
 │   ├── schemas.py              Pydantic models (Profile mirrors render_pdf)
 │   ├── prompts.py              All prompt strings, grouped by step
 │   ├── client.py               Shared Anthropic client + cache helpers
-│   └── inputs.py               File loader (md / txt / pdf)
+│   ├── inputs.py               File loader (md / txt / pdf)
+│   └── data/identity.json      Static identity merged client-side
 ├── tailor.py                   CLI entrypoint for the pipeline
 ├── render_pdf/                 Rendering package (JSON → PDF)
 │   ├── __init__.py             Exposes `render(data_path, output_path)`
@@ -31,7 +34,7 @@ cv_generate/
 │   └── data/profile.json       Sample profile + schema example
 ├── snippets/                   RAG snippet store
 │   └── experience.json         Role chunks with canonical + variant framings
-├── examples/                   Sample JD + company profile
+├── examples/                   Sample JD
 ├── output/                     Rendered PDFs + per-run stage dumps (gitignored)
 ├── reference/                  Source reference CVs (gitignored)
 ├── requirements.txt
@@ -56,13 +59,13 @@ This project uses python-dotenv>=1.2.2 to inject the Anthropic API key into the 
 End-to-end tailoring:
 
 ```bash
-python tailor.py examples/jd.md examples/company.md
-python tailor.py path/to/jd.md path/to/company.md -o cv.pdf
+python tailor.py examples/jd.md
+python tailor.py path/to/jd.md -o cv.pdf
 ```
 
 The orchestrator dumps each stage's structured output under
-`output/run_<time_stamp>/` (`jd_spec.json`, `company.json`,
-`selection.json`, `profile_draft.json`, `review.json`, `profile.json`)
+`output/run_<time_stamp>/` (`jd_spec.json`, `selection.json`,
+`sections_draft.json`, `review.json`, `sections.json`, `profile.json`)
 so individual stages can be inspected and debugged in isolation.
 
 Rendering on its own (skip the LLM stages — hand it a `profile.json`):
@@ -78,7 +81,7 @@ As a library:
 from pathlib import Path
 
 from tailor import tailor
-tailor(Path("jd.md"), Path("company.md"), Path("output/cv.pdf"))
+tailor(Path("jd.md"), Path("output/cv.pdf"))
 
 # or, render-only:
 from render_pdf import render
@@ -93,12 +96,13 @@ generated from Pydantic models so the model is structurally constrained
 to emit valid JSON.
 
 ```
-jd.md ─►  jd_analyser     ─►  JDSpec
-company.md ─►  company_researcher (+web_search) ─►  CompanyContext
-snippets ─►  retriever     ─►  SnippetSelection
-            assembler     ─►  Profile (draft)
-            reviewer      ─►  ReviewReport
-            amender       ─►  Profile (final) ─► render_pdf ─► cv.pdf
+jd.md     ─►  jd_analyser  ─►  JDSpec
+snippets  ─►  retriever    ─►  SnippetSelection
+              assembler    ─►  TailoredSections (draft)
+              reviewer     ─►  ReviewReport
+              amender      ─►  TailoredSections (final)
+identity ─┬──────────────────► Profile ─► render_pdf ─► cv.pdf
+sections ─┘
 ```
 
 ## Data shape

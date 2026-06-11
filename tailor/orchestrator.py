@@ -66,40 +66,36 @@ def _merge_identity(
     )
 
 
-def tailor(
-    jd_path: Path,
-    company_path: Path,
-    out_path:
-Path) -> Path:
+def tailor(jd_path: Path, out_path: Path) -> Path:
     """
     Run the full pipeline:
     1. Load data
     2. Analyse job spec
-    3. Research company
-    4. Retrieve snippets (RAG)
-    5. Generate CV
-    6. Review CV
-    7. Amend CV
-    8. Finish
+    3. Retrieve snippets (RAG)
+    4. Generate CV
+    5. Review CV
+    6. Amend CV
+    7. Finish
 
     Intermediate stage outputs are dumped under `output/run_<time_stamp>/` so each
     stage can be inspected in isolation when debugging.
+
+    Company context is intentionally not researched — JDs typically embed
+    the business / tech / values signals the downstream stages need.
     """
     from render_pdf import render
 
     from . import (
         amender,
         assembler,
-        company_researcher,
         jd_analyser,
         retriever,
-        reviewer
+        reviewer,
     )
 
     # Step 1
     run_dir = _create_run_dir()
     jd_text = load_text(jd_path)
-    company_text = load_text(company_path)
     identity = Identity.model_validate_json(IDENTITY_PATH.read_text())
 
     # Step 2
@@ -107,29 +103,25 @@ Path) -> Path:
     (run_dir / "jd_spec.json").write_text(jd_spec.model_dump_json(indent=2))
 
     # Step 3
-    company = company_researcher.research_company(company_text)
-    (run_dir / "company.json").write_text(company.model_dump_json(indent=2))
-
-    # Step 4
     snippets = json.loads(SNIPPETS_PATH.read_text())
-    selection = retriever.select_snippets(snippets, jd_spec, company)
+    selection = retriever.select_snippets(snippets, jd_spec)
     (run_dir / "selection.json").write_text(selection.model_dump_json(indent=2))
 
-    # Step 5
-    sections = assembler.assemble_profile(selection, jd_spec, company, snippets)
+    # Step 4
+    sections = assembler.assemble_profile(selection, jd_spec, snippets)
     (run_dir / "sections_draft.json").write_text(
         sections.model_dump_json(indent=2)
     )
 
-    # Step 6
+    # Step 5
     report = reviewer.review(sections, jd_spec)
     (run_dir / "review.json").write_text(report.model_dump_json(indent=2))
 
-    # Step 7
+    # Step 6
     sections = amender.amend(sections, report)
     (run_dir / "sections.json").write_text(sections.model_dump_json(indent=2))
 
-    # Step 8
+    # Step 7
     final = _merge_identity(identity, sections)
     final_path = run_dir / "profile.json"
     final_path.write_text(final.model_dump_json(indent=2))

@@ -25,38 +25,19 @@ JD_ANALYSER_USER = "Job description:\n\n{jd_text}"
 
 
 # =============================================================
-# Step 3: Company Research Agent
-# =============================================================
-
-COMPANY_RESEARCH_SYSTEM = """You research a target company for a CV-tailoring \
-pipeline. Start from the user-supplied profile, then use `web_search` to \
-enrich it with recent news, tech-stack signals, and stated values. Cap your \
-research at a handful of searches — depth is less important than coverage \
-of: business focus, tech signals, values, and 2-3 recent initiatives. \
-
-You MUST finish your turn by calling the `record_company_context` tool \
-exactly once, with everything you have learned filled in. Include the source \
-URLs you relied on in the `sources` field. Do not respond with plain text; \
-the recording tool call is the only valid termination of this turn."""
-
-COMPANY_RESEARCH_USER = "Company profile (user-supplied):\n\n{profile_text}"
-
-
-# =============================================================
-# Step 4: Retrieval
+# Step 3: Retrieval
 # =============================================================
 
 RETRIEVER_SYSTEM = """You select experience snippets for a tailored CV. The \
 snippet corpus is in the next system block. For each `render_hint` section \
-the user names, pick the snippets that best match the JD/company context and \
-choose the `framing` variant that fits the tone. Respect one-page A4 limits: \
-no more than 5 bullets per experience role, no more than 4 skill groups."""
+the user names, pick the snippets that best match the JD and choose the \
+`framing` variant that fits the tone. JDs frequently embed company context \
+(business focus, values, tech stack) — treat that as part of the JD signal. \
+Respect one-page A4 limits: no more than 5 bullets per experience role, no \
+more than 4 skill groups."""
 
 RETRIEVER_USER = """JD spec:
 {jd_spec}
-
-Company context:
-{company}
 
 Sections to fill (render_hint values present in the corpus):
 {sections}
@@ -66,7 +47,7 @@ Return a `SnippetSelection` mapping each render_hint to an ordered list of \
 
 
 # =============================================================
-# Step 5: Assembler / CV Builder
+# Step 4: Assembler / CV Builder
 # =============================================================
 
 ASSEMBLER_SYSTEM = """You assemble the tailored sections of a CV — only \
@@ -87,17 +68,15 @@ For `skills[]`, draw label/text from the skill snippets selected for the \
 `skills[]` render hint; keep to 4 or fewer groups.
 
 For `summary`, write 2-3 sentences that speak to the JD and naturally \
-include the ATS keywords, grounded in the supplied snippets and company \
-context.
+include the ATS keywords, grounded in the supplied snippets. JDs frequently \
+embed company context (business focus, values, tech stack) — lean on that \
+when phrasing the summary so it speaks to the employer's environment.
 
 HTML is allowed only in `skills[].text`; keep tags simple (`<strong>`). \
 No script tags."""
 
 ASSEMBLER_USER = """JD spec:
 {jd_spec}
-
-Company context:
-{company}
 
 Role metadata (source of truth for experience[].title/organisation/dates):
 {roles}
@@ -108,7 +87,7 @@ skills, metrics):
 
 
 # =============================================================
-# Step 6: Reviewer
+# Step 5: Reviewer
 # =============================================================
 
 REVIEWER_SYSTEM = """You critique the tailored sections of a CV (summary, \
@@ -124,7 +103,7 @@ Tailored sections to review:
 {sections}"""
 
 # =============================================================
-# Step 7: Amender
+# Step 6: Amender
 # =============================================================
 
 AMENDER_SYSTEM = """You apply a `ReviewReport` to the tailored sections of \

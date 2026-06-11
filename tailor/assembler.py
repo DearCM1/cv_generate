@@ -1,5 +1,5 @@
 """
-Step 5 of the tailor pipeline: assemble the tailored CV sections.
+Step 4 of the tailor pipeline: assemble the tailored CV sections.
 
 The retriever has already chosen which snippets to use and the framing
 variant of each. Here we:
@@ -7,9 +7,8 @@ variant of each. Here we:
 1. Resolve each `(snippet_id, framing)` pick into its actual bullet text
    client-side (deterministic — no LLM call needed for lookups).
 2. Hand the resolved bullets, the snippet `roles` metadata (title /
-   organisation / dates), the `JDSpec`, and the `CompanyContext` to
-   Sonnet and ask it to weave them into a `TailoredSections` JSON via a
-   forced tool call.
+   organisation / dates), and the `JDSpec` to Sonnet and ask it to weave
+   them into a `TailoredSections` JSON via a forced tool call.
 
 The LLM produces only `summary`, `experience[]`, and `skills[]`. Static
 identity fields (name, contact, education, publications, leadership)
@@ -28,7 +27,7 @@ import sys
 
 from .client import SONNET, cached_text_block, client
 from .prompts import ASSEMBLER_SYSTEM, ASSEMBLER_USER
-from .schemas import CompanyContext, JDSpec, SnippetSelection, TailoredSections
+from .schemas import JDSpec, SnippetSelection, TailoredSections
 
 
 # =============================================================
@@ -122,7 +121,6 @@ def _resolve_picks(
 def assemble_profile(
     selection: SnippetSelection,
     jd_spec: JDSpec,
-    company: CompanyContext,
     snippets: dict,
 ) -> TailoredSections:
     """
@@ -150,7 +148,6 @@ def assemble_profile(
                 "role": "user",
                 "content": ASSEMBLER_USER.format(
                     jd_spec=jd_spec.model_dump_json(indent=2),
-                    company=company.model_dump_json(indent=2),
                     roles=json.dumps(roles, indent=2),
                     snippets=json.dumps(resolved, indent=2),
                 ),

@@ -3,7 +3,7 @@ CLI entrypoint for the cv_generate tailoring pipeline.
 
 Usage:
 
-    python tailor.py <jd_path> <company_path> [-o output_path]
+    python tailor.py <jd_path> [-o output_path]
 
 Defaults the output to `output/cv.pdf` at the project root so it lands
 in the same gitignored render target as `python -m render_pdf.main`.
@@ -39,20 +39,12 @@ def main() -> None:
     rendered PDF is written to the `--output` path.
     """
     parser = argparse.ArgumentParser(
-        description=(
-            "Generate a tailored CV PDF from a job description and "
-            "company profile."
-        ),
+        description="Generate a tailored CV PDF from a job description.",
     )
     parser.add_argument(
         "jd_path",
         type=Path,
         help="Job description file (.md / .txt / .pdf)",
-    )
-    parser.add_argument(
-        "company_path",
-        type=Path,
-        help="Company profile file (.md / .txt / .pdf)",
     )
     parser.add_argument(
         "-o",
@@ -64,7 +56,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    pdf_path = run_tailor(args.jd_path, args.company_path, args.output)
+    pdf_path = run_tailor(args.jd_path, args.output)
     print(f"wrote {pdf_path}")
 
 
