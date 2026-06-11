@@ -44,11 +44,12 @@ cv_generate/
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-export ANTHROPIC_API_KEY=...
 ```
 
 WeasyPrint has native dependencies (Pango, cairo). On macOS:
 `brew install pango`.
+
+This project uses python-dotenv>=1.2.2 to inject the Anthropic API key into the environment. Write `ANTHROPIC_API_KEY="..."` within a .env file within the repo root.
 
 ## Usage
 
