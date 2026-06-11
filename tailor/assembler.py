@@ -1,0 +1,166 @@
+"""
+Step 5 of the tailor pipeline: assemble the tailored `profile.json`.
+
+The retriever has already chosen which snippets to use and the framing
+variant of each. Here we:
+
+1. Resolve each `(snippet_id, framing)` pick into its actual bullet text
+   client-side (deterministic — no LLM call needed for lookups).
+2. Hand the resolved bullets to Sonnet alongside the base profile, the
+   `JDSpec`, and the `CompanyContext`, and ask it to weave them into a
+   complete `Profile` JSON via a forced tool call.
+
+Static fields (name, contact, education, publications_presentations) are
+copied through from the base profile. The model regenerates `summary`,
+each `experience[].bullets`, `skills[].text`, and `leadership` so they
+speak to the target role.
+"""
+# =============================================================
+# packages
+# =============================================================
+
+from __future__ import annotations
+
+import json
+import sys
+
+from .client import SONNET, cached_text_block, client
+from .prompts import ASSEMBLER_SYSTEM, ASSEMBLER_USER
+from .schemas import CompanyContext, JDSpec, Profile, SnippetSelection
+
+
+# =============================================================
+# config
+# =============================================================
+
+TOOL_NAME = "record_profile"
+ASSEMBLER_MAX_TOKENS = 8192
+
+
+# =============================================================
+# functions
+# =============================================================
+
+def _tool_definition() -> dict:
+    """
+    Build the Anthropic client tool definition for the recording step,
+    derived from the `Profile` Pydantic schema so the model's output is
+    guaranteed to satisfy the render_pdf contract.
+    """
+    return {
+        "name": TOOL_NAME,
+        "description": (
+            "Record the assembled CV profile JSON. Must match the "
+            "`profile.json` contract exactly — same field names, same "
+            "nesting. Render_pdf is the source of truth."
+        ),
+        "input_schema": Profile.model_json_schema(),
+    }
+
+
+def _resolve_text(snippet: dict, framing: str) -> str:
+    """
+    Return the snippet text for the requested framing. Falls back to the
+    canonical `text` if no matching variant exists, emitting a stderr
+    warning so the orchestrator log shows the mismatch.
+    """
+    if snippet.get("framing") == framing:
+        return snippet["text"]
+
+    for variant in snippet.get("variants", []):
+        if variant.get("framing") == framing:
+            return variant["text"]
+
+    print(
+        f"warn: framing '{framing}' not found on snippet "
+        f"'{snippet.get('id')}'; falling back to canonical text",
+        file=sys.stderr,
+    )
+    return snippet["text"]
+
+
+def _resolve_picks(
+    snippets: dict,
+    selection: SnippetSelection,
+) -> dict[str, list[dict]]:
+    """
+    Turn `SnippetSelection` into ready-to-use bullet material grouped
+    by `render_hint`. Each entry carries the chosen text plus the
+    snippet's skills and metrics, which the model uses to keep
+    claims grounded.
+    """
+    index = {s["id"]: s for s in snippets.get("snippets", [])}
+    resolved: dict[str, list[dict]] = {}
+
+    for hint, picks in selection.picks_by_render_hint.items():
+        bucket: list[dict] = []
+
+        for pick in picks:
+            snippet = index.get(pick.snippet_id)
+            if snippet is None:
+                raise KeyError(
+                    f"snippet id '{pick.snippet_id}' is not in the corpus"
+                )
+
+            bucket.append(
+                {
+                    "snippet_id": pick.snippet_id,
+                    "framing": pick.framing,
+                    "text": _resolve_text(snippet, pick.framing),
+                    "skills": snippet.get("skills", []),
+                    "metrics": snippet.get("metrics", []),
+                }
+            )
+
+        resolved[hint] = bucket
+
+    return resolved
+
+
+def assemble_profile(
+    selection: SnippetSelection,
+    jd_spec: JDSpec,
+    company: CompanyContext,
+    base: Profile,
+    snippets: dict,
+) -> Profile:
+    """
+    Compose the final `Profile` JSON. Schema is enforced both by the
+    forced tool call (input_schema) and by Pydantic validation of the
+    returned object.
+    """
+    resolved = _resolve_picks(snippets, selection)
+
+    response = client().messages.create(
+        model=SONNET,
+        max_tokens=ASSEMBLER_MAX_TOKENS,
+        system=[
+            {"type": "text", "text": ASSEMBLER_SYSTEM},
+            cached_text_block(
+                "Profile schema (must match exactly):\n"
+                + json.dumps(Profile.model_json_schema(), indent=2)
+            ),
+        ],
+        tools=[_tool_definition()],
+        tool_choice={"type": "tool", "name": TOOL_NAME},
+        messages=[
+            {
+                "role": "user",
+                "content": ASSEMBLER_USER.format(
+                    jd_spec=jd_spec.model_dump_json(indent=2),
+                    company=company.model_dump_json(indent=2),
+                    snippets=json.dumps(resolved, indent=2),
+                    base=base.model_dump_json(indent=2),
+                ),
+            }
+        ],
+    )
+
+    for block in response.content:
+        if block.type == "tool_use" and block.name == TOOL_NAME:
+            return Profile.model_validate(block.input)
+
+    raise RuntimeError(
+        f"Expected a `{TOOL_NAME}` tool call from the assembler; got: "
+        f"{[b.type for b in response.content]}"
+    )
