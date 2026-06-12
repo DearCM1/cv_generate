@@ -21,10 +21,9 @@
     <!-- ===== Hero ===== -->
     <header class="hero">
         <p class="eyebrow">RAG-tailored CV pipeline · run report</p>
-        <h1 class="hero-title">Tailored for <span class="accent">{{ job_spec.role_title }}</span></h1>
+        <h1 class="hero-title">Tailored for <span class="accent">{{ job_spec.role_title }}</span>{% if job_spec.company %} at <span class="accent">{{ job_spec.company }}</span>{% endif %}</h1>
         <p class="hero-sub">
-            {{ job_spec.seniority }}{% if job_spec.company %} · {{ job_spec.company }}{% endif %}
-            · <span class="framing badge framing-{{ job_spec.framing_hint }}">{{ job_spec.framing_hint }}</span> framing
+            {{ job_spec.seniority }} · <span class="framing badge framing-{{ job_spec.framing_hint }}">{{ job_spec.framing_hint }}</span> framing
         </p>
         <div class="hero-meta">
             <button type="button" class="run-id" data-copy="{{ run_id }}" title="Copy run id">
@@ -123,33 +122,53 @@
         </div>
     </section>
 
-    <!-- ===== Token economics ===== -->
-    <section class="block">
-        <h2 class="block-title">Token economics</h2>
-        <p class="block-note">A cached system block (snippet corpus + profile schema) is amortised across stages — cache reads bill at ~0.1× input.</p>
+    <!-- ===== Costs breakdown ===== -->
+    <section class="block" id="costs">
+        <div class="pies">
+            <div class="pies-head">
+                <h2 class="block-title">Costs breakdown</h2>
+                <p class="block-note">Where the run's tokens and dollars went.</p>
+            </div>
+            <div class="pie-grid">
+                <figure class="pie" data-chart="tokens">
+                    <figcaption class="pie-cap">
+                        <span class="pie-title">Tokens by type</span>
+                        <span class="pie-total">{{ totals.tokens_total | commas }} tokens</span>
+                    </figcaption>
+                    <div class="pie-stage">
+                        <div class="pie-wrap"><!-- svg injected by site.js --></div>
+                        <div class="pie-center"></div>
+                        <div class="pie-modal"></div>
+                    </div>
+                    <ul class="pie-legend"></ul>
+                </figure>
 
-        <div class="stack" role="img" aria-label="Token breakdown by type">
-            {% for seg in token_breakdown %}
-            {% if seg.pct > 0 %}
-            <span class="stack-seg {{ seg.css_class }}" style="width: {{ seg.pct }}%;" title="{{ seg.label }}: {{ seg.value | commas }}"></span>
-            {% endif %}
-            {% endfor %}
+                <figure class="pie" data-chart="cost">
+                    <figcaption class="pie-cap">
+                        <span class="pie-title">Cost by stage</span>
+                        <span class="pie-total">${{ '%.4f' | format(totals.cost) }}</span>
+                    </figcaption>
+                    <div class="pie-stage">
+                        <div class="pie-wrap"><!-- svg injected by site.js --></div>
+                        <div class="pie-center"></div>
+                        <div class="pie-modal"></div>
+                    </div>
+                    <ul class="pie-legend"></ul>
+                </figure>
+            </div>
         </div>
-        <ul class="legend">
-            {% for seg in token_breakdown %}
-            <li>
-                <span class="swatch {{ seg.css_class }}"></span>
-                <span class="legend-label">{{ seg.label }}</span>
-                <span class="legend-value">{{ seg.value | commas }} · {{ seg.pct }}%</span>
-            </li>
-            {% endfor %}
-        </ul>
+
+        <noscript>
+            <p class="block-note">The interactive pie charts need JavaScript, the per-stage table above carries the same token and cost figures.</p>
+        </noscript>
+
+        <script type="application/json" id="costs-data">{{ cost_charts | tojson }}</script>
     </section>
 
     <!-- ===== Job understanding (JDSpec) ===== -->
     <details class="block detail" open>
         <summary><span class="block-title">Job understanding</span><span class="summary-hint">JD → spec</span></summary>
-        <p class="block-note">What the first (Haiku) stage extracted from the raw job description — the keywords and signals that drive retrieval and ATS optimisation.</p>
+        <p class="block-note">What the first (Haiku) stage extracted from the raw job description, including the keywords and signals that drive retrieval and ATS optimisation.</p>
 
         <dl class="kv">
             <div><dt>Role</dt><dd>{{ job_spec.role_title }}</dd></div>
@@ -179,7 +198,7 @@
     <!-- ===== Retrieval (RAG selection) ===== -->
     <details class="block detail" open>
         <summary><span class="block-title">Retrieval</span><span class="summary-hint">RAG selection</span></summary>
-        <p class="block-note">The retriever picked these experience snippets — and a per-snippet framing variant — for each CV section.</p>
+        <p class="block-note">The retriever picked these experience snippets and a per-snippet framing variant for each CV section.</p>
 
         {% for group in selection %}
         <div class="retrieval-group">
@@ -214,6 +233,7 @@
             · <a href="https://calumdear.dev">calumdear.dev</a>
         </p>
         <p class="muted">Generated by the <code>cv_generate</code> RAG pipeline · <time datetime="{{ generated_at_iso }}">{{ generated_at }}</time></p>
+        <p class="muted">View the pipeline code on <a href="https://github.com/DearCM1/cv_generate">GitHub</a></p>
     </footer>
 
 </main>

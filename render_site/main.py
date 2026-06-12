@@ -21,6 +21,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from tailor.pricing import PRICING
 from tailor.schemas import Metrics
 
 from .publish import sync_assets
@@ -136,22 +137,63 @@ def build_view_model(metrics: Metrics) -> dict:
         "n_calls": len(stages),
     }
 
-    bar_total = (
-        totals["tokens_in"]
-        + totals["tokens_out"]
-        + totals["tokens_cache_creation"]
-        + totals["tokens_cache_read"]
-    )
-    token_breakdown = [
-        {"label": "Input", "value": totals["tokens_in"],
-         "pct": _pct(totals["tokens_in"], bar_total), "css_class": "tok-input"},
-        {"label": "Output", "value": totals["tokens_out"],
-         "pct": _pct(totals["tokens_out"], bar_total), "css_class": "tok-output"},
-        {"label": "Cache write", "value": totals["tokens_cache_creation"],
-         "pct": _pct(totals["tokens_cache_creation"], bar_total), "css_class": "tok-cache-write"},
-        {"label": "Cache read", "value": totals["tokens_cache_read"],
-         "pct": _pct(totals["tokens_cache_read"], bar_total), "css_class": "tok-cache-read"},
+    # --- Cost-breakdown pies -----------------------------------------
+    # Token mix, each type split by the stage that produced it.
+    token_segments = [
+        ("Input", "tokens_in"),
+        ("Output", "tokens_out"),
+        ("Cache write", "tokens_cache_creation"),
+        # Cache read omitted: ~always 0, which renders no slice.
     ]
+
+    tokens_chart = {
+        "id": "tokens",
+        "title": "Tokens by type",
+        "format": "int",
+        "centerLabel": "tokens",
+        "segments": [
+            {
+                "label": label,
+                "value": totals[key],
+                "breakdown": [
+                    {"label": s["name"], "value": s[key]} for s in stages
+                ],
+            }
+            for label, key in token_segments
+        ],
+    }
+
+    cost_components = [
+        ("Input", "tokens_in", "input"),
+        ("Output", "tokens_out", "output"),
+        ("Cache write", "tokens_cache_creation", "cache_write_5m"),
+        ("Cache read", "tokens_cache_read", "cache_read"),
+    ]
+
+    cost_segments = []
+    for s in stages:
+        rates = PRICING[s["model"]]
+        cost_segments.append(
+            {
+                "label": s["name"],
+                "model": s["model_label"],
+                "value": s["dollars"],
+                "breakdown": [
+                    {"label": label, "value": s[tok_key] * rates[rate_key] / 1_000_000}
+                    for label, tok_key, rate_key in cost_components
+                ],
+            }
+        )
+    
+    cost_chart = {
+        "id": "cost",
+        "title": "Cost by stage",
+        "format": "usd",
+        "centerLabel": "total cost",
+        "segments": cost_segments,
+    }
+
+    cost_charts = [tokens_chart, cost_chart]
 
     selection = []
     for hint, picks in metrics.snippet_selection.picks_by_render_hint.items():
@@ -176,7 +218,7 @@ def build_view_model(metrics: Metrics) -> dict:
         "generated_at": _fmt_generated(metrics.runtime.start),
         "generated_at_iso": metrics.runtime.start.isoformat(),
         "totals": totals,
-        "token_breakdown": token_breakdown,
+        "cost_charts": cost_charts,
         "stages": stages,
         "job_spec": metrics.job_spec,
         "selection": selection,

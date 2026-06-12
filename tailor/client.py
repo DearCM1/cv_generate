@@ -25,6 +25,8 @@ from anthropic import Anthropic
 
 from .schemas import CallTimeMetrics, ModelCost, ModelMetrics, TokenCost
 
+from .pricing import PRICING
+
 
 # =============================================================
 # config
@@ -33,27 +35,7 @@ from .schemas import CallTimeMetrics, ModelCost, ModelMetrics, TokenCost
 load_dotenv()
 api_key = os.environ.get("ANTHROPIC_API_KEY")
 
-SONNET = "claude-sonnet-4-6"
-HAIKU = "claude-haiku-4-5-20251001"
-
 DEFAULT_MAX_TOKENS = 4096
-
-
-# Dollars per million tokens.
-PRICING: dict[str, dict[str, float]] = {
-    SONNET: {
-        "input": 3.00,
-        "output": 15.00,
-        "cache_write_5m": 3.75,
-        "cache_read": 0.30,
-    },
-    HAIKU: {
-        "input": 1.00,
-        "output": 5.00,
-        "cache_write_5m": 1.25,
-        "cache_read": 0.10,
-    },
-}
 
 
 # =============================================================

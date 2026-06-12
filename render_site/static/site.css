@@ -244,37 +244,155 @@ code { font-family: var(--mono); font-size: 0.92em; }
     color: var(--fg);
 }
 
-/* ===== Token economics ===== */
-.stack {
-    display: flex;
-    width: 100%;
-    height: 26px;
-    border-radius: var(--radius-sm);
-    overflow: hidden;
+/* ===== Costs breakdown (pies) ===== */
+.pies {
+    background: var(--bg-card);
     border: 1px solid var(--line);
-    background: var(--bg-soft);
+    border-radius: var(--radius);
+}
+.pies-head { padding: 18px 20px 16px; }
+.pies-head .block-title { margin: 0; }
+.pies-head .block-note { margin: 8px 0 0; }
+
+.pie-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid var(--line-soft);
 }
 
-.stack-seg { height: 100%; transition: filter 0.15s; }
-.stack-seg:hover { filter: brightness(1.18); }
+.pie {
+    min-width: 0;
+    padding: 18px 20px 20px;
+}
+.pie + .pie { border-left: 1px solid var(--line-soft); }
 
-.tok-input       { background: #6ea8fe; }
-.tok-output      { background: #8b7cf6; }
-.tok-cache-write { background: #f59e6b; }
-.tok-cache-read  { background: #4ade80; }
-
-.legend {
+.pie-cap {
     display: flex;
-    flex-wrap: wrap;
-    gap: 16px 22px;
-    margin: 14px 0 0;
-    padding: 0;
-    list-style: none;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
 }
-.legend li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.swatch { width: 11px; height: 11px; border-radius: 3px; flex: none; }
-.legend-label { color: var(--fg-muted); }
-.legend-value { font-family: var(--mono); font-size: 12px; color: var(--fg-faint); }
+.pie-title { font-size: 14px; font-weight: 650; }
+.pie-total {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--fg-faint);
+    font-variant-numeric: tabular-nums;
+}
+
+.pie-stage {
+    position: relative;
+    width: 100%;
+    max-width: 230px;
+    margin: 10px auto 4px;
+    aspect-ratio: 1 / 1;
+}
+.pie-wrap { width: 100%; height: 100%; }
+.pie-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+.seg {
+    cursor: pointer;
+    transition: opacity 0.18s ease, filter 0.18s ease, transform 0.22s cubic-bezier(.2,.7,.2,1);
+}
+.pie-svg.is-hovering .seg { opacity: 0.22; }
+.pie-svg.is-hovering .seg.active {
+    opacity: 1;
+    filter: brightness(1.08) drop-shadow(0 3px 7px rgba(0, 0, 0, 0.5));
+}
+.pie-hole { fill: var(--bg-card); }
+
+.pie-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+.pie-center .pc-value { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.pie-center .pc-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-faint); }
+
+/* Hover / tap breakdown modal.
+   Desktop: position:fixed, JS sticks it to the bottom-right of the cursor.
+   Mobile:  centred, dismissable pop-up over a backdrop (see @media below). */
+.pie-modal {
+    position: fixed;
+    left: 0; top: 0;
+    width: min(94vw, 235px);
+    transform: scale(0.92);
+    transform-origin: top left;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.6);
+    padding: 12px 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.16s cubic-bezier(.2,.7,.2,1);
+    z-index: 50;
+}
+.pie-modal[data-show="1"] { opacity: 1; transform: scale(1); }
+
+.pie-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 9, 14, 0.62);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s ease;
+    z-index: 40;
+}
+.pie-backdrop[data-show="1"] { opacity: 1; pointer-events: auto; }
+
+.pm-close {
+    display: none;
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 26px; height: 26px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    color: var(--fg-muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+.pm-close:hover { color: var(--fg); border-color: var(--accent); }
+
+.pm-head { display: flex; align-items: baseline; gap: 8px; }
+.pm-title { font-size: 13px; font-weight: 650; }
+.pm-sub { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--fg-faint); font-variant-numeric: tabular-nums; }
+.pm-model { margin: 2px 0 0; font-size: 11px; color: var(--fg-muted); }
+.pm-rows { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pm-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; }
+.pm-row .pm-k { font-size: 12px; color: var(--fg-muted); }
+.pm-row .pm-v { font-family: var(--mono); font-size: 11px; color: var(--fg-faint); text-align: right; font-variant-numeric: tabular-nums; }
+.pm-bar { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--bg-card); overflow: hidden; }
+.pm-bar > span { display: block; height: 100%; border-radius: 3px; }
+
+/* Per-pie legend */
+.pie-legend { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pie-legend li {
+    display: grid;
+    grid-template-columns: 12px 1fr auto;
+    align-items: center;
+    gap: 9px;
+    padding: 3px 5px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    transition: background 0.15s;
+}
+.pie-legend li.active { background: var(--bg-soft); }
+.pie-legend .lg-swatch { width: 11px; height: 11px; border-radius: 3px; }
+.pie-legend .lg-label { color: var(--fg-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pie-legend .lg-value { font-family: var(--mono); font-size: 11px; color: var(--fg-faint); font-variant-numeric: tabular-nums; }
 
 /* ===== Badges & chips ===== */
 .badge {
@@ -324,12 +442,20 @@ code { font-family: var(--mono); font-size: 0.92em; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 7px; }
 .chip {
+    --glow: 0; /* 0–1 proximity to cursor*/
     padding: 4px 11px;
     background: var(--bg-card);
-    border: 1px solid var(--line);
+    border: 1px solid;
+    border-color: color-mix(in srgb, var(--accent) calc(var(--glow) * 100%), var(--line));
     border-radius: 999px;
     font-size: 12.5px;
     color: var(--fg);
+    box-shadow: 0 0 calc(var(--glow) * 14px) rgba(110, 168, 254, calc(var(--glow) * 0.5));
+    transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+.chip:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 14px rgba(110, 168, 254, 0.5);
 }
 
 /* ===== Details (expandable) ===== */
@@ -421,6 +547,26 @@ code { font-family: var(--mono); font-size: 0.92em; }
     .page { padding: 32px 16px 56px; }
     .gantt-row { grid-template-columns: 96px 1fr 48px; gap: 8px; }
     .gantt-name { font-size: 12px; }
+
+    /* Donuts stack within the single card */
+    .pie-grid { grid-template-columns: 1fr; }
+    .pie + .pie { border-left: none; border-top: 1px solid var(--line-soft); }
+
+    /* Pie breakdown becomes a centred, dismissable modal */
+    .pie-modal {
+        left: 50% !important;
+        top: 50% !important;
+        width: min(88vw, 330px);
+        transform: translate(-50%, -50%) scale(0.94) !important;
+        transform-origin: center;
+        padding: 16px 16px 18px;
+    }
+    .pie-modal[data-show="1"] {
+        transform: translate(-50%, -50%) scale(1) !important;
+        pointer-events: auto;
+    }
+    .pie-modal .pm-head { padding-right: 30px; }
+    .pm-close { display: inline-flex; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

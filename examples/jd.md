@@ -3,10 +3,11 @@
 ## About the role
 
 We are looking for a Senior Data Engineer to join our growing data platform
-team. You will own the design and operation of production data pipelines
-that power our customer analytics, pricing, and operations products. You
-will work closely with data scientists, ML engineers, and product managers
-to deliver reliable, well-governed data to the rest of the business.
+team at Octopus Energy. You will own the design and operation of production
+data pipelines that power our customer analytics, pricing, and operations
+products. You will work closely with data scientists, ML engineers, and
+product managers to deliver reliable, well-governed data to the rest of the
+business.
 
 ## What you'll do
 
