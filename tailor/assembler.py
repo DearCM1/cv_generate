@@ -27,7 +27,7 @@ import sys
 
 from anthropic import APIError
 
-from .client import SONNET, cached_text_block, call_model
+from .client import SONNET, call_model
 from .prompts import ASSEMBLER_SYSTEM, ASSEMBLER_USER
 from .schemas import JDSpec, ModelMetrics, SnippetSelection, TailoredSections
 from .tool_response import parse_forced_tool_response
@@ -141,10 +141,15 @@ def assemble_profile(
             max_tokens=ASSEMBLER_MAX_TOKENS,
             system=[
                 {"type": "text", "text": ASSEMBLER_SYSTEM},
-                cached_text_block(
-                    "TailoredSections schema (must match exactly):\n"
-                    + json.dumps(TailoredSections.model_json_schema(), indent=2)
-                ),
+                {
+                    "type": "text",
+                    "text": (
+                        "TailoredSections schema (must match exactly):\n"
+                        + json.dumps(
+                            TailoredSections.model_json_schema(), indent=2
+                        )
+                    ),
+                },
             ],
             tools=[_tool_definition()],
             tool_choice={"type": "tool", "name": TOOL_NAME},
