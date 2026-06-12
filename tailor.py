@@ -34,9 +34,10 @@ DEFAULT_OUTPUT = PROJECT_ROOT / "output" / "cv.pdf"
 
 def main() -> None:
     """
-    Parse args and invoke the pipeline. Stage outputs are dumped under
-    `output/run_<time_stamp>/` by the orchestrator itself; the final
-    rendered PDF is written to the `--output` path.
+    Parse args and invoke the pipeline. Stage outputs and a master
+    `metrics.json` are dumped under `output/run_<uuid7>/` by the
+    orchestrator itself; the final rendered PDF is written to the
+    `--output` path.
     """
     parser = argparse.ArgumentParser(
         description="Generate a tailored CV PDF from a job description.",

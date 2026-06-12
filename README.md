@@ -64,9 +64,11 @@ python tailor.py path/to/jd.md -o cv.pdf
 ```
 
 The orchestrator dumps each stage's structured output under
-`output/run_<time_stamp>/` (`jd_spec.json`, `selection.json`,
+`output/run_<uuid7>/` (`jd_spec.json`, `selection.json`,
 `sections_draft.json`, `review.json`, `sections.json`, `profile.json`)
-so individual stages can be inspected and debugged in isolation.
+so individual stages can be inspected and debugged in isolation. The
+same directory also receives a `metrics.json` capturing per-call
+timing, token usage, and dollar cost for the public-facing run page.
 
 Rendering on its own (skip the LLM stages — hand it a `profile.json`):
 
