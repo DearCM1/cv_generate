@@ -43,7 +43,7 @@ OUTPUT_ROOT = PROJECT_ROOT / "output"
 def _create_run_dir(run_id: UUID) -> Path:
     """
     Create the per-run subdirectory under `output/`, named after the
-    run's uuid7 so the directory name doubles as the eventual public
+    run's uuid7 so the directory name doubles as the public
     `calumdear.dev/cv/<uuid7>` URL slug.
     """
     run_dir = OUTPUT_ROOT / f"run_{run_id}"
@@ -84,17 +84,22 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
     4. Generate CV
     5. Review CV
     6. Amend CV
-    7. Finish
+    7. Capture pipeline metrics
+    8. Write final CV data
+    9. Render audit webpage
 
     Intermediate stage outputs are dumped under `output/run_<uuid7>/` so
     each stage can be inspected in isolation when debugging. A master
     `metrics.json` is also written, capturing per-call timing, token
     usage, and dollar cost for the public-facing run page.
-
-    Company context is intentionally not researched — JDs typically embed
-    the business / tech / values signals the downstream stages need.
     """
     from render_pdf import render
+    from render_site import (
+        WEBSITE_ROOT,
+        page_url_for,
+        publish_run,
+        render_run_page,
+    )
 
     from . import (
         amender,
@@ -136,9 +141,8 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
     sections, amd_metrics = amender.amend(sections, report)
     (run_dir / "sections.json").write_text(sections.model_dump_json(indent=2))
 
-    # Capture overall runtime and dump the master metrics object before
-    # the client-side merge / render — both of those are deterministic
-    # and not worth metering for the website page.
+    # TODO make sure documentation is updated to match what is in the steps here
+    # Step 7
     run_finish = datetime.now(timezone.utc)
     metrics = Metrics(
         id=run_id,
@@ -159,10 +163,17 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
     )
     (run_dir / "metrics.json").write_text(metrics.model_dump_json(indent=2))
 
-    # Step 7
+    # Step 8
+    page_url = page_url_for(str(run_id))
     final = _merge_identity(identity, sections)
     final_path = run_dir / "profile.json"
     final_path.write_text(final.model_dump_json(indent=2))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    return render(final_path, out_path)
+    pdf_path = render(final_path, out_path, page_url=page_url)
+
+    # Step 9
+    render_run_page(metrics)
+    publish_run(str(run_id), WEBSITE_ROOT)
+
+    return pdf_path

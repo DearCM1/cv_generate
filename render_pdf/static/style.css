@@ -1,6 +1,3 @@
-/* Print-optimised CV stylesheet for WeasyPrint.
-   Uses system-safe serif/sans stacks only — no external font requests. */
-
 @page {
     size: A4;
     margin: 12mm 14mm;
@@ -14,7 +11,6 @@ html, body {
     margin: 0;
     padding: 0;
     color: #000;
-    /* System-safe sans stack; WeasyPrint maps these to locally available fonts. */
     font-family: "Helvetica", "Arial", sans-serif;
     font-size: 10pt;
     line-height: 1.3;
@@ -56,7 +52,6 @@ html, body {
 
 /* ===== Sections ===== */
 .section {
-    /* Top border acts as the divider between sections — matches the original. */
     border-top: 0.5pt solid #000;
     padding-top: 4pt;
     margin-top: 6pt;
@@ -128,10 +123,22 @@ a {
     text-decoration: underline;
 }
 
+/* ===== Run-report footer ===== */
+.cv-footer {
+    margin-top: 8pt;
+    padding-top: 4pt;
+    border-top: 0.5pt solid #999;
+    font-size: 7.5pt;
+    color: #666;
+    text-align: center;
+}
+
+.cv-footer a {
+    color: #666;
+}
+
 /* ===== Print rules ===== */
 @media print {
-    /* Avoid breaking a job entry across pages. WeasyPrint supports
-       `page-break-inside` reliably; the modern `break-inside` is also honoured. */
     .job, .section {
         page-break-inside: avoid;
         break-inside: avoid;

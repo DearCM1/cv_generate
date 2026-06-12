@@ -39,10 +39,7 @@ HAIKU = "claude-haiku-4-5-20251001"
 DEFAULT_MAX_TOKENS = 4096
 
 
-# Dollars per million tokens. Cache-write rates assume the default 5-minute
-# ephemeral cache window (cv_generate's `cached_text_block` uses
-# `{"type": "ephemeral"}`). Verify against current Anthropic pricing before
-# the metrics first feed the public webpage.
+# Dollars per million tokens.
 PRICING: dict[str, dict[str, float]] = {
     SONNET: {
         "input": 3.00,

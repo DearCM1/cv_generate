@@ -64,5 +64,9 @@
             {% endfor %}
         </ul>
     </section>
+
+    {% if page_url %}
+    <p class="cv-footer">This CV was tailored to the job description using a Retrieval-Augmented Generation (RAG) AI pipeline I designed and built. You can review the pipeline and read more here: <a href="{{ page_url }}">{{ page_url }}</a></p>
+    {% endif %}
 </body>
 </html>

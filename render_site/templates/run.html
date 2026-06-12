@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CV pipeline run · {{ job_spec.role_title }}</title>
+    <meta name="description" content="RAG CV-tailoring pipeline run report — {{ job_spec.role_title }}. {{ totals.n_calls }} LLM calls, {{ totals.tokens_total | commas }} tokens, ${{ '%.4f' | format(totals.cost) }}, {{ totals.elapsed_seconds }}s.">
+    <meta name="robots" content="noindex">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="CV pipeline run · {{ job_spec.role_title }}">
+    <meta property="og:description" content="A RAG CV-tailoring run: {{ totals.n_calls }} LLM calls · {{ totals.tokens_total | commas }} tokens · ${{ '%.4f' | format(totals.cost) }} · {{ totals.elapsed_seconds }}s.">
+    <meta property="og:url" content="{{ page_url }}">
+
+    <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<main class="page">
+
+    <!-- ===== Hero ===== -->
+    <header class="hero">
+        <p class="eyebrow">RAG-tailored CV pipeline · run report</p>
+        <h1 class="hero-title">Tailored for <span class="accent">{{ job_spec.role_title }}</span></h1>
+        <p class="hero-sub">
+            {{ job_spec.seniority }}{% if job_spec.company %} · {{ job_spec.company }}{% endif %}
+            · <span class="framing badge framing-{{ job_spec.framing_hint }}">{{ job_spec.framing_hint }}</span> framing
+        </p>
+        <div class="hero-meta">
+            <button type="button" class="run-id" data-copy="{{ run_id }}" title="Copy run id">
+                <span class="run-id-label">run</span>
+                <code>{{ run_id }}</code>
+            </button>
+            <time datetime="{{ generated_at_iso }}">{{ generated_at }}</time>
+        </div>
+    </header>
+
+    <!-- ===== Metric cards ===== -->
+    <section class="cards" aria-label="Run totals">
+        <div class="card">
+            <p class="card-value">${{ '%.4f' | format(totals.cost) }}</p>
+            <p class="card-label">Total cost</p>
+        </div>
+        <div class="card">
+            <p class="card-value">{{ totals.tokens_total | commas }}</p>
+            <p class="card-label">Total tokens</p>
+        </div>
+        <div class="card">
+            <p class="card-value">{{ totals.elapsed_seconds }}<span class="unit">s</span></p>
+            <p class="card-label">Wall-clock</p>
+        </div>
+        <div class="card">
+            <p class="card-value">{{ totals.n_calls }}</p>
+            <p class="card-label">LLM calls</p>
+        </div>
+        <div class="card">
+            <p class="card-value card-models">{{ models_used | join(' + ') }}</p>
+            <p class="card-label">Models</p>
+        </div>
+    </section>
+
+    <!-- ===== Pipeline stages ===== -->
+    <section class="block">
+        <h2 class="block-title">Pipeline stages</h2>
+        <p class="block-note">Five sequential forced-tool calls to Claude, in order. The bars show each stage's share of wall-clock time.</p>
+
+        <div class="gantt" role="img" aria-label="Stage timing relative to total run">
+            {% for s in stages %}
+            <div class="gantt-row">
+                <span class="gantt-name">{{ s.name }}</span>
+                <span class="gantt-track">
+                    <span class="gantt-bar" style="margin-left: {{ s.offset_pct }}%; width: {{ s.pct_of_run }}%;"></span>
+                </span>
+                <span class="gantt-time">{{ s.elapsed_seconds }}s</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="table-scroll">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Model</th>
+                        <th class="num">Time</th>
+                        <th class="num">In</th>
+                        <th class="num">Out</th>
+                        <th class="num">Cache&nbsp;w</th>
+                        <th class="num">Cache&nbsp;r</th>
+                        <th class="num">Tokens</th>
+                        <th class="num">Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in stages %}
+                    <tr>
+                        <td>{{ s.name }}</td>
+                        <td><span class="badge model">{{ s.model_label }}</span></td>
+                        <td class="num">{{ s.elapsed_seconds }}s</td>
+                        <td class="num">{{ s.tokens_in | commas }}</td>
+                        <td class="num">{{ s.tokens_out | commas }}</td>
+                        <td class="num">{{ s.tokens_cache_creation | commas }}</td>
+                        <td class="num">{{ s.tokens_cache_read | commas }}</td>
+                        <td class="num">{{ s.tokens_total | commas }}</td>
+                        <td class="num">${{ '%.4f' | format(s.dollars) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>Total</td>
+                        <td></td>
+                        <td class="num">{{ totals.elapsed_seconds }}s</td>
+                        <td class="num">{{ totals.tokens_in | commas }}</td>
+                        <td class="num">{{ totals.tokens_out | commas }}</td>
+                        <td class="num">{{ totals.tokens_cache_creation | commas }}</td>
+                        <td class="num">{{ totals.tokens_cache_read | commas }}</td>
+                        <td class="num">{{ totals.tokens_total | commas }}</td>
+                        <td class="num">${{ '%.4f' | format(totals.cost) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    <!-- ===== Token economics ===== -->
+    <section class="block">
+        <h2 class="block-title">Token economics</h2>
+        <p class="block-note">A cached system block (snippet corpus + profile schema) is amortised across stages — cache reads bill at ~0.1× input.</p>
+
+        <div class="stack" role="img" aria-label="Token breakdown by type">
+            {% for seg in token_breakdown %}
+            {% if seg.pct > 0 %}
+            <span class="stack-seg {{ seg.css_class }}" style="width: {{ seg.pct }}%;" title="{{ seg.label }}: {{ seg.value | commas }}"></span>
+            {% endif %}
+            {% endfor %}
+        </div>
+        <ul class="legend">
+            {% for seg in token_breakdown %}
+            <li>
+                <span class="swatch {{ seg.css_class }}"></span>
+                <span class="legend-label">{{ seg.label }}</span>
+                <span class="legend-value">{{ seg.value | commas }} · {{ seg.pct }}%</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <!-- ===== Job understanding (JDSpec) ===== -->
+    <details class="block detail" open>
+        <summary><span class="block-title">Job understanding</span><span class="summary-hint">JD → spec</span></summary>
+        <p class="block-note">What the first (Haiku) stage extracted from the raw job description — the keywords and signals that drive retrieval and ATS optimisation.</p>
+
+        <dl class="kv">
+            <div><dt>Role</dt><dd>{{ job_spec.role_title }}</dd></div>
+            <div><dt>Seniority</dt><dd>{{ job_spec.seniority }}</dd></div>
+            <div><dt>Company</dt><dd>{{ job_spec.company or '—' }}</dd></div>
+            <div><dt>Framing</dt><dd><span class="badge framing-{{ job_spec.framing_hint }}">{{ job_spec.framing_hint }}</span></dd></div>
+        </dl>
+
+        {% set chip_groups = [
+            ('Must-have skills', job_spec.must_have_skills),
+            ('Nice-to-have skills', job_spec.nice_to_have_skills),
+            ('ATS keywords', job_spec.ats_keywords),
+            ('Tone signals', job_spec.tone_signals),
+        ] %}
+        {% for label, items in chip_groups %}
+        {% if items %}
+        <div class="chip-group">
+            <h3 class="chip-group-title">{{ label }} <span class="count">{{ items | length }}</span></h3>
+            <div class="chips">
+                {% for item in items %}<span class="chip">{{ item }}</span>{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </details>
+
+    <!-- ===== Retrieval (RAG selection) ===== -->
+    <details class="block detail" open>
+        <summary><span class="block-title">Retrieval</span><span class="summary-hint">RAG selection</span></summary>
+        <p class="block-note">The retriever picked these experience snippets — and a per-snippet framing variant — for each CV section.</p>
+
+        {% for group in selection %}
+        <div class="retrieval-group">
+            <h3 class="retrieval-head">
+                {{ group.display_name }}
+                <code class="hint">{{ group.render_hint }}</code>
+                <span class="count">{{ group.count }}</span>
+            </h3>
+            {% if group.picks %}
+            <table class="data picks">
+                <thead><tr><th>Snippet</th><th>Framing</th></tr></thead>
+                <tbody>
+                    {% for p in group.picks %}
+                    <tr>
+                        <td><code>{{ p.snippet_id }}</code></td>
+                        <td><span class="badge framing-{{ p.framing }}">{{ p.framing }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty">No snippets selected for this section.</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </details>
+
+    <!-- ===== Footer ===== -->
+    <footer class="page-footer">
+        <p>
+            <a href="metrics.json">View raw metrics.json</a>
+            · <a href="https://calumdear.dev">calumdear.dev</a>
+        </p>
+        <p class="muted">Generated by the <code>cv_generate</code> RAG pipeline · <time datetime="{{ generated_at_iso }}">{{ generated_at }}</time></p>
+    </footer>
+
+</main>
+<script src="/assets/site.js" defer></script>
+</body>
+</html>

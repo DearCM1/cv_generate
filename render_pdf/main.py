@@ -32,7 +32,11 @@ DEFAULT_OUTPUT = OUTPUT_DIR / "cv.pdf"
 # functions
 # =============================================================
 
-def render(data_path: Path, output_path: Path) -> Path:
+def render(
+    data_path: Path,
+    output_path: Path,
+    page_url: str | None = None
+) -> Path:
     with data_path.open("r", encoding="utf-8") as f:
         data = json.load(f)
 
@@ -41,7 +45,7 @@ def render(data_path: Path, output_path: Path) -> Path:
         autoescape=select_autoescape(["html", "xml"]),
     )
     template = env.get_template("cv.html")
-    html_str = template.render(**data)
+    html_str = template.render(**data, page_url=page_url)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     HTML(string=html_str, base_url=str(PKG_DIR)).write_pdf(
