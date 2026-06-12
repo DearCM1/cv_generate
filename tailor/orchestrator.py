@@ -77,21 +77,27 @@ def _merge_identity(
 
 def tailor(jd_path: Path, out_path: Path) -> Path:
     """
-    Run the full pipeline:
-    1. Load data
-    2. Analyse job spec
-    3. Retrieve snippets (RAG)
-    4. Generate CV
-    5. Review CV
-    6. Amend CV
-    7. Capture pipeline metrics
-    8. Write final CV data
-    9. Render audit webpage
+    Run the full RAG CV-tailoring pipeline end-to-end.
 
-    Intermediate stage outputs are dumped under `output/run_<uuid7>/` so
-    each stage can be inspected in isolation when debugging. A master
-    `metrics.json` is also written, capturing per-call timing, token
-    usage, and dollar cost for the public-facing run page.
+    Steps 1–9 below (and in the code) correspond to the architecture described
+    in README.md, which documents five LLM stages (each a forced tool call,
+    Sonnet + Haiku) plus merging and rendering.
+
+    1. Load inputs: JD text, static identity, run ID, timestamps.
+    2. LLM stage 1: JD Analysis (Haiku). Extract keywords, skills, tone.
+    3. LLM stage 2: Snippet Retrieval (Sonnet). RAG: pick experience bullets.
+    4. LLM stage 3: Section Assembly (Sonnet). Weave snippets into CV profile.
+    5. LLM stage 4: Review (Sonnet). Critique vs job spec.
+    6. LLM stage 5: Amendment (Sonnet). Apply feedback, finalize profile.
+    7. Metrics aggregation. Capture timing, tokens, cost across all stages.
+    8. Output: Merge identity with tailored sections; render PDF.
+    9. Render audit: Generate public run page, publish to website repo.
+
+    All intermediate outputs (jd_spec, selection, sections_draft, review,
+    sections, profile) are written to `output/run_<uuid7>/` for inspection.
+    A master `metrics.json` records per-call timing, token usage, and cost.
+
+    See README.md for architecture overview and rationale.
     """
     from render_pdf import render
     from render_site import (
@@ -109,23 +115,23 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
         reviewer,
     )
 
-    # Step 1
+    # --- Step 1: Load inputs ---
     run_id = uuid7()
     run_start = datetime.now(timezone.utc)
     run_dir = _create_run_dir(run_id)
     jd_text = load_text(jd_path)
     identity = Identity.model_validate_json(IDENTITY_PATH.read_text())
 
-    # Step 2
+    # --- Step 2: LLM stage 1 — JD Analysis (Haiku) ---
     jd_spec, jd_metrics = jd_analyser.analyse_jd(jd_text)
     (run_dir / "jd_spec.json").write_text(jd_spec.model_dump_json(indent=2))
 
-    # Step 3
+    # --- Step 3: LLM stage 2 — Snippet Retrieval (Sonnet) ---
     snippets = json.loads(SNIPPETS_PATH.read_text())
     selection, sel_metrics = retriever.select_snippets(snippets, jd_spec)
     (run_dir / "selection.json").write_text(selection.model_dump_json(indent=2))
 
-    # Step 4
+    # --- Step 4: LLM stage 3 — Section Assembly (Sonnet) ---
     sections, asm_metrics = assembler.assemble_profile(
         selection, jd_spec, snippets,
     )
@@ -133,16 +139,15 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
         sections.model_dump_json(indent=2)
     )
 
-    # Step 5
+    # --- Step 5: LLM stage 4 — Review (Sonnet) ---
     report, rev_metrics = reviewer.review(sections, jd_spec)
     (run_dir / "review.json").write_text(report.model_dump_json(indent=2))
 
-    # Step 6
+    # --- Step 6: LLM stage 5 — Amendment (Sonnet) ---
     sections, amd_metrics = amender.amend(sections, report)
     (run_dir / "sections.json").write_text(sections.model_dump_json(indent=2))
 
-    # TODO make sure documentation is updated to match what is in the steps here
-    # Step 7
+    # --- Step 7: Metrics aggregation ---
     run_finish = datetime.now(timezone.utc)
     metrics = Metrics(
         id=run_id,
@@ -163,7 +168,7 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
     )
     (run_dir / "metrics.json").write_text(metrics.model_dump_json(indent=2))
 
-    # Step 8
+    # --- Step 8: Output — merge identity & render PDF ---
     page_url = page_url_for(str(run_id))
     final = _merge_identity(identity, sections)
     final_path = run_dir / "profile.json"
@@ -172,7 +177,7 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     pdf_path = render(final_path, out_path, page_url=page_url)
 
-    # Step 9
+    # --- Step 9: Render audit page & publish ---
     render_run_page(metrics)
     publish_run(str(run_id), WEBSITE_ROOT)
 

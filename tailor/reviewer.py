@@ -1,5 +1,5 @@
 """
-Step 6 of the tailor pipeline: critique the assembled profile against
+Step 5 of the tailor pipeline: critique the assembled profile against
 the `JDSpec` and emit a structured `ReviewReport`.
 
 The reviewer is a single forced tool call — no web search, no retrieval.

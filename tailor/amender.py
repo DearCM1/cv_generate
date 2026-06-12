@@ -1,5 +1,5 @@
 """
-Step 7 of the tailor pipeline: apply the `ReviewReport` to the profile
+Step 6 of the tailor pipeline: apply the `ReviewReport` to the profile
 and return the revised `Profile` JSON.
 
 No iteration: a single amendment pass is the contract for v1. If the

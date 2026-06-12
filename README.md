@@ -90,12 +90,37 @@ from render_pdf import render
 render(Path("data.json"), Path("output/cv.pdf"))
 ```
 
+## Orchestration
+
+The `tailor()` function in `tailor/orchestrator.py` runs nine sequential steps.
+This is the canonical reference; code comments in `orchestrator.py` mark each step.
+
+1. **Load inputs**: Parse JD text; load static identity; generate run ID and timestamps.
+2. **LLM stage 1 — JD Analysis** (Haiku): `jd_analyser.analyse_jd()` extracts keywords,
+   must-haves, tone signals, and a framing hint → `JDSpec`.
+3. **LLM stage 2 — Snippet Retrieval** (Sonnet): `retriever.select_snippets()` picks
+   experience bullets per render-hint section (full corpus cached) → `SnippetSelection`.
+4. **LLM stage 3 — Section Assembly** (Sonnet): `assembler.assemble_profile()` weaves
+   selected snippets into CV sections → `TailoredSections` (draft).
+5. **LLM stage 4 — Review** (Sonnet): `reviewer.review()` critiques the draft against
+   the job spec → `ReviewReport`.
+6. **LLM stage 5 — Amendment** (Sonnet): `amender.amend()` applies the review feedback
+   → `TailoredSections` (final).
+7. **Metrics aggregation**: Collect timing, token counts, and cost from all five stages
+   into a master `Metrics` object.
+8. **Output**: Merge `identity` with the final tailored sections (client-side, LLM-free)
+   → `Profile`; render to PDF via `render_pdf`.
+9. **Audit & publish**: Generate a public run page (`render_site`) and optionally publish
+   it to the website repo (Cloudflare Pages).
+
+Steps 2–6 are LLM stages, each a single forced tool call. Step 7 aggregates the
+captured metrics. Steps 8–9 are post-processing (no LLM, no API calls).
+
 ## Pipeline at a glance
 
-Each stage is a single forced tool call against Claude (Haiku for the
-cheap JD extraction, Sonnet for everything else). Tool input schemas are
-generated from Pydantic models so the model is structurally constrained
-to emit valid JSON.
+Each LLM stage (steps 2–6) uses a single forced tool call against Claude (Haiku
+for cheap JD extraction, Sonnet for everything else). Tool input schemas are
+generated from Pydantic models so the model is constrained to emit valid JSON.
 
 ```
 jd.md     ─►  jd_analyser  ─►  JDSpec
