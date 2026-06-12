@@ -44,6 +44,13 @@ class JDSpec(BaseModel):
     """
     role_title: str
     seniority: str
+    company: str | None = Field(
+        default=None,
+        description=(
+            "Hiring company name, extracted verbatim from the JD. "
+            "Null when the JD does not name the company."
+        ),
+    )
     must_have_skills: list[str]
     nice_to_have_skills: list[str]
     ats_keywords: list[str] = Field(

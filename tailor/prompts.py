@@ -19,7 +19,9 @@ from __future__ import annotations
 JD_ANALYSER_SYSTEM = """You analyse job descriptions for a CV-tailoring \
 pipeline. Extract a structured `JDSpec` describing what an ATS will scan for \
 and what tone the employer expects. Be concrete: prefer verbatim phrases \
-from the JD over paraphrases for `ats_keywords`."""
+from the JD over paraphrases for `ats_keywords`. Capture the hiring \
+`company` name verbatim when the JD states it; use null if no company is \
+named."""
 
 JD_ANALYSER_USER = "Job description:\n\n{jd_text}"
 
