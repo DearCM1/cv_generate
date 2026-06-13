@@ -102,7 +102,7 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
     from render_pdf import render
     from render_site import (
         WEBSITE_ROOT,
-        page_url_for,
+        landing_url_for,
         publish_run,
         render_run_page,
     )
@@ -169,7 +169,11 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
     (run_dir / "metrics.json").write_text(metrics.model_dump_json(indent=2))
 
     # --- Step 8: Output — merge identity & render PDF ---
-    page_url = page_url_for(str(run_id))
+    page_url = landing_url_for(
+        str(run_id),
+        company=jd_spec.company,
+        role=jd_spec.role_title,
+    )
     final = _merge_identity(identity, sections)
     final_path = run_dir / "profile.json"
     final_path.write_text(final.model_dump_json(indent=2))

@@ -18,6 +18,7 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote, urlencode
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -62,6 +63,22 @@ MODEL_LABELS = {
 def page_url_for(run_id: str) -> str:
     """Canonical public URL for a run page."""
     return f"{BASE_URL}/cv/{run_id}"
+
+
+def landing_url_for(
+    run_id: str,
+    *,
+    company: str | None,
+    role: str,
+) -> str:
+    """Landing-page URL carrying the run and role context."""
+    params = [("run", run_id)]
+    if company:
+        params.append(("company", company))
+    if role:
+        params.append(("role", role))
+    query = urlencode(params, quote_via=quote)
+    return f"{BASE_URL}/cv/index.html?{query}"
 
 
 def _model_label(model: str) -> str:
