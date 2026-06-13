@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from anthropic import APIError
 
-from .client import DEFAULT_MAX_TOKENS, HAIKU, call_model
+from .client import DEFAULT_MAX_TOKENS, call_model
+from .pricing import HAIKU
 from .prompts import JD_ANALYSER_SYSTEM, JD_ANALYSER_USER
 from .schemas import JDSpec, ModelMetrics
 from .tool_response import parse_forced_tool_response

@@ -19,7 +19,8 @@ import json
 
 from anthropic import APIError
 
-from .client import SONNET, cached_text_block, call_model
+from .client import cached_text_block, call_model
+from .pricing import SONNET
 from .prompts import RETRIEVER_SYSTEM, RETRIEVER_USER
 from .schemas import JDSpec, ModelMetrics, SnippetSelection
 from .tool_response import parse_forced_tool_response

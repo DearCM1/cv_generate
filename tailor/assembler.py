@@ -27,7 +27,8 @@ import sys
 
 from anthropic import APIError
 
-from .client import SONNET, call_model
+from .client import call_model
+from .pricing import SONNET
 from .prompts import ASSEMBLER_SYSTEM, ASSEMBLER_USER
 from .schemas import JDSpec, ModelMetrics, SnippetSelection, TailoredSections
 from .tool_response import parse_forced_tool_response

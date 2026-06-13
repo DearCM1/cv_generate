@@ -15,7 +15,8 @@ from __future__ import annotations
 
 from anthropic import APIError
 
-from .client import DEFAULT_MAX_TOKENS, SONNET, call_model
+from .client import DEFAULT_MAX_TOKENS, call_model
+from .pricing import SONNET
 from .prompts import REVIEWER_SYSTEM, REVIEWER_USER
 from .schemas import JDSpec, ModelMetrics, ReviewReport, TailoredSections
 from .tool_response import parse_forced_tool_response

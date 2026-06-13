@@ -16,7 +16,8 @@ import json
 
 from anthropic import APIError
 
-from .client import SONNET, call_model
+from .client import call_model
+from .pricing import SONNET
 from .prompts import AMENDER_SYSTEM, AMENDER_USER
 from .schemas import ModelMetrics, ReviewReport, TailoredSections
 from .tool_response import parse_forced_tool_response
