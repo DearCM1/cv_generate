@@ -24,9 +24,6 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from tailor.pricing import PRICING
 from tailor.schemas import Metrics
 
-from .publish import sync_assets
-
-
 # =============================================================
 # config
 # =============================================================
@@ -34,7 +31,6 @@ from .publish import sync_assets
 PKG_DIR = Path(__file__).parent
 PROJECT_ROOT = PKG_DIR.parent  # cv_generate/
 TEMPLATES_DIR = PKG_DIR / "templates"
-STATIC_DIR = PKG_DIR / "static"
 OUTPUT_ROOT = PROJECT_ROOT / "output"
 
 WEBSITE_ROOT = Path(
@@ -233,8 +229,9 @@ def build_view_model(metrics: Metrics) -> dict:
 def render_run_page(metrics: Metrics, website_root: Path = WEBSITE_ROOT) -> Path:
     """
     Render `WEBSITE_ROOT/cv/<uuid7>/index.html` (and a sibling copy of the
-    raw `metrics.json`) for a single run, and sync the shared assets into
-    `website_root/assets/`. Returns the path to the written index.html.
+    raw `metrics.json`) for a single run. Shared CSS and JavaScript are owned
+    by `website_root/assets/` and referenced by the rendered page. Returns the
+    path to the written index.html.
     """
     run_id = str(metrics.id)
     out_dir = website_root / "cv" / run_id
@@ -254,7 +251,6 @@ def render_run_page(metrics: Metrics, website_root: Path = WEBSITE_ROOT) -> Path
         metrics.model_dump_json(indent=2), encoding="utf-8"
     )
 
-    sync_assets(website_root)
     return index_path
 
 

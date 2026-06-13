@@ -32,6 +32,10 @@ cv_generate/
 │   ├── templates/cv.html       Jinja2 HTML template
 │   ├── static/style.css        Print-optimised stylesheet (A4, pt units)
 │   └── data/profile.json       Sample profile + schema example
+├── render_site/                Public run-page renderer and publisher
+│   ├── main.py                 Metrics JSON → website run page
+│   ├── publish.py              Commits and pushes generated run files
+│   └── templates/run.html      Jinja2 template referencing /assets/*
 ├── snippets/                   RAG snippet store
 │   └── experience.json         Role chunks with canonical + variant framings
 ├── examples/                   Sample JD
@@ -53,6 +57,12 @@ WeasyPrint has native dependencies (Pango, cairo). On macOS:
 `brew install pango`.
 
 This project uses python-dotenv>=1.2.2 to inject the Anthropic API key into the environment. Write `ANTHROPIC_API_KEY="..."` within a .env file within the repo root.
+
+The audit-page pipeline expects a sibling `website/` repository by default,
+or a repository selected with `WEBSITE_REPO`. That repository must provide
+`assets/site.css` and `assets/site.js`; these are the only source of truth for
+the website's shared styles and browser behavior. `render_site` generates run
+HTML and metrics files but does not create, copy, stage, or publish assets.
 
 ## Usage
 
@@ -111,10 +121,19 @@ This is the canonical reference; code comments in `orchestrator.py` mark each st
 8. **Output**: Merge `identity` with the final tailored sections (client-side, LLM-free)
    → `Profile`; render to PDF via `render_pdf`.
 9. **Audit & publish**: Generate a public run page (`render_site`) and optionally publish
-   it to the website repo (Cloudflare Pages).
+   its `cv/<uuid7>/` directory to the website repo (Cloudflare Pages). Generated pages
+   reference the website-owned `/assets/site.css` and `/assets/site.js`.
 
 Steps 2–6 are LLM stages, each a single forced tool call. Step 7 aggregates the
 captured metrics. Steps 8–9 are post-processing (no LLM, no API calls).
+
+### Website asset ownership
+
+The `website/` repository owns all shared web assets. Edit `website/assets/site.css`
+and `website/assets/site.js` directly; there are no mirrored copies under
+`render_site/`. Publishing a run stages only `website/cv/<uuid7>/`, preventing the
+CV pipeline from overwriting unrelated website asset changes. The stylesheet at
+`render_pdf/static/style.css` is separate and remains the source for PDF rendering.
 
 ## Pipeline at a glance
 
