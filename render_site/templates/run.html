@@ -7,7 +7,7 @@
     <meta name="description" content="RAG CV-tailoring pipeline run report — {{ job_spec.role_title }}. {{ totals.n_calls }} LLM calls, {{ totals.tokens_total | commas }} tokens, ${{ '%.4f' | format(totals.cost) }}, {{ totals.elapsed_seconds }}s.">
     <meta name="robots" content="noindex">
 
-    <!-- Open Graph -->
+    <!-- Metadata -->
     <meta property="og:type" content="article">
     <meta property="og:title" content="CV pipeline run · {{ job_spec.role_title }}">
     <meta property="og:description" content="A RAG CV-tailoring run: {{ totals.n_calls }} LLM calls · {{ totals.tokens_total | commas }} tokens · ${{ '%.4f' | format(totals.cost) }} · {{ totals.elapsed_seconds }}s.">
@@ -18,47 +18,47 @@
 <body>
 <main class="page">
 
-    <!-- ===== Hero ===== -->
-    <header class="hero">
-        <p class="eyebrow">RAG-tailored CV pipeline · run report</p>
+    <!-- Hero -->
+    <header class="report-hero">
+        <p class="report-eyebrow">RAG-tailored CV pipeline · run report</p>
         <h1 class="hero-title">Tailored for <span class="accent">{{ job_spec.role_title }}</span>{% if job_spec.company %} at <span class="accent">{{ job_spec.company }}</span>{% endif %}</h1>
         <p class="hero-sub">
             {{ job_spec.seniority }} · <span class="framing badge framing-{{ job_spec.framing_hint }}">{{ job_spec.framing_hint }}</span> framing
         </p>
-        <div class="hero-meta">
-            <button type="button" class="run-id" data-copy="{{ run_id }}" title="Copy run id">
-                <span class="run-id-label">run</span>
+        <div class="report-hero-meta">
+            <button type="button" class="report-run-id" data-copy="{{ run_id }}" title="Copy run id">
+                <span class="report-run-id-label">run</span>
                 <code>{{ run_id }}</code>
             </button>
             <time datetime="{{ generated_at_iso }}">{{ generated_at }}</time>
         </div>
     </header>
 
-    <!-- ===== Metric cards ===== -->
-    <section class="cards" aria-label="Run totals">
-        <div class="card">
-            <p class="card-value">${{ '%.4f' | format(totals.cost) }}</p>
-            <p class="card-label">Total cost</p>
+    <!-- Metrics -->
+    <section class="report-metrics" aria-label="Run totals">
+        <div class="report-metric">
+            <p class="report-metric-value">${{ '%.4f' | format(totals.cost) }}</p>
+            <p class="report-metric-label">Total cost</p>
         </div>
-        <div class="card">
-            <p class="card-value">{{ totals.tokens_total | commas }}</p>
-            <p class="card-label">Total tokens</p>
+        <div class="report-metric">
+            <p class="report-metric-value">{{ totals.tokens_total | commas }}</p>
+            <p class="report-metric-label">Total tokens</p>
         </div>
-        <div class="card">
-            <p class="card-value">{{ totals.elapsed_seconds }}<span class="unit">s</span></p>
-            <p class="card-label">Wall-clock</p>
+        <div class="report-metric">
+            <p class="report-metric-value">{{ totals.elapsed_seconds }}<span class="unit">s</span></p>
+            <p class="report-metric-label">Wall-clock</p>
         </div>
-        <div class="card">
-            <p class="card-value">{{ totals.n_calls }}</p>
-            <p class="card-label">LLM calls</p>
+        <div class="report-metric">
+            <p class="report-metric-value">{{ totals.n_calls }}</p>
+            <p class="report-metric-label">LLM calls</p>
         </div>
-        <div class="card">
-            <p class="card-value card-models">{{ models_used | join(' + ') }}</p>
-            <p class="card-label">Models</p>
+        <div class="report-metric">
+            <p class="report-metric-value report-metric-models">{{ models_used | join(' + ') }}</p>
+            <p class="report-metric-label">Models</p>
         </div>
     </section>
 
-    <!-- ===== Pipeline stages ===== -->
+    <!-- Pipeline -->
     <section class="block">
         <h2 class="block-title">Pipeline stages</h2>
         <p class="block-note">Five sequential forced-tool calls to Claude, in order. The bars show each stage's share of wall-clock time.</p>
@@ -122,7 +122,7 @@
         </div>
     </section>
 
-    <!-- ===== Costs breakdown ===== -->
+    <!-- Cost charts -->
     <section class="block" id="costs">
         <div class="pies">
             <div class="pies-head">
@@ -136,7 +136,7 @@
                         <span class="pie-total">{{ totals.tokens_total | commas }} tokens</span>
                     </figcaption>
                     <div class="pie-stage">
-                        <div class="pie-wrap"><!-- svg injected by site.js --></div>
+                        <div class="pie-wrap"></div>
                         <div class="pie-center"></div>
                         <div class="pie-modal"></div>
                     </div>
@@ -149,7 +149,7 @@
                         <span class="pie-total">${{ '%.4f' | format(totals.cost) }}</span>
                     </figcaption>
                     <div class="pie-stage">
-                        <div class="pie-wrap"><!-- svg injected by site.js --></div>
+                        <div class="pie-wrap"></div>
                         <div class="pie-center"></div>
                         <div class="pie-modal"></div>
                     </div>
@@ -165,7 +165,7 @@
         <script type="application/json" id="costs-data">{{ cost_charts | tojson }}</script>
     </section>
 
-    <!-- ===== Job understanding (JDSpec) ===== -->
+    <!-- Job specification -->
     <details class="block detail" open>
         <summary><span class="block-title">Job understanding</span><span class="summary-hint">JD → spec</span></summary>
         <p class="block-note">What the first (Haiku) stage extracted from the raw job description, including the keywords and signals that drive retrieval and ATS optimisation.</p>
@@ -195,7 +195,7 @@
         {% endfor %}
     </details>
 
-    <!-- ===== Retrieval (RAG selection) ===== -->
+    <!-- Retrieval -->
     <details class="block detail" open>
         <summary><span class="block-title">Retrieval</span><span class="summary-hint">RAG selection</span></summary>
         <p class="block-note">The retriever picked these experience snippets and a per-snippet framing variant for each CV section.</p>
@@ -226,11 +226,11 @@
         {% endfor %}
     </details>
 
-    <!-- ===== Footer ===== -->
+    <!-- Footer -->
     <footer class="page-footer">
         <p><a href="https://github.com/DearCM1/cv_generate" target="_blank" rel="noopener noreferrer">cv_generate on GitHub</a> · <a href="https://calumdear.dev">calumdear.dev</a></p>
         <p class="muted">Generated by the <code>cv_generate</code> RAG pipeline · <time datetime="{{ generated_at_iso }}">{{ generated_at }}</time></p>
-        <p class="muted"><code>Copyright Calum Dear 2026</code></p>
+        <p class="muted"><code>&copy; 2026 Calum Dear All rights reserved</code></p>
     </footer>
 
 </main>
