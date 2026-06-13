@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from urllib.parse import urlparse
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from weasyprint import HTML
@@ -35,17 +36,25 @@ DEFAULT_OUTPUT = OUTPUT_DIR / "cv.pdf"
 def render(
     data_path: Path,
     output_path: Path,
-    page_url: str | None = None
 ) -> Path:
+    """Render a complete profile JSON document as a PDF."""
     with data_path.open("r", encoding="utf-8") as f:
         data = json.load(f)
+
+    url = data.get("url", "")
+    parsed_url = urlparse(url)
+    if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+        raise ValueError(
+            "profile.json 'url' must be an absolute HTTP(S) URL, "
+            f"got {url!r}"
+        )
 
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
         autoescape=select_autoescape(["html", "xml"]),
     )
     template = env.get_template("cv.html")
-    html_str = template.render(**data, page_url=page_url)
+    html_str = template.render(**data)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     HTML(string=html_str, base_url=str(PKG_DIR)).write_pdf(

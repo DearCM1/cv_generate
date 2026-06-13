@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ name }} — CV</title>
-    <link rel="stylesheet" href="../static/style.css">
 </head>
 <body>
     <header class="header">
@@ -65,8 +64,8 @@
         </ul>
     </section>
 
-    {% if page_url %}
-    <p class="cv-footer">This CV was tailored to the job description using a Retrieval-Augmented Generation (RAG) AI pipeline I designed and built. You can review the pipeline and read more here: <a href="{{ page_url }}">{{ page_url }}</a></p>
+    {% if url %}
+    <p class="cv-footer">This CV was tailored to the job description using a RAG AI pipeline I designed and built. You can read more here: <a href="{{ url }}">calumdear.dev</a></p>
     {% endif %}
 </body>
 </html>

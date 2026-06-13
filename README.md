@@ -119,7 +119,8 @@ This is the canonical reference; code comments in `orchestrator.py` mark each st
 7. **Metrics aggregation**: Collect timing, token counts, and cost from all five stages
    into a master `Metrics` object.
 8. **Output**: Merge `identity` with the final tailored sections (client-side, LLM-free)
-   → `Profile`; render to PDF via `render_pdf`.
+   and the contextual website URL → `Profile`; write `profile.json`, then render it to
+   PDF via `render_pdf`. The renderer receives all template data through this JSON file.
 9. **Audit & publish**: Generate a public run page (`render_site`) and optionally publish
    its `cv/<uuid7>/` directory to the website repo (Cloudflare Pages). Generated pages
    reference the website-owned `/assets/site.css` and `/assets/site.js`.
@@ -156,7 +157,7 @@ sections ─┘
 See `render_pdf/data/profile.json` for the full schema; the
 `tailor.schemas.Profile` Pydantic model mirrors it exactly. Top-level
 keys consumed by the template: `name`, `credential`, `contact`,
-`summary`, `education`, `experience`, `publications_presentations`,
+`url`, `summary`, `education`, `experience`, `publications_presentations`,
 `leadership`, `skills`. Fields ending in `text` / `qualification` accept
 inline HTML (e.g. `<strong>`, `<a>`) and are passed through the `| safe`
 filter — sanitise upstream when accepting LLM-generated content.

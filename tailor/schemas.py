@@ -14,7 +14,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AnyHttpUrl, AwareDatetime, BaseModel, Field
 from uuid import UUID
 from uuid6 import uuid7
 
@@ -140,10 +140,11 @@ class TailoredSections(BaseModel):
 
 class Profile(BaseModel):
     """
-    Main data object which renders into Jinja template.
+    Complete data object consumed by the PDF Jinja template.
     """
     name: str
     credential: str
+    url: AnyHttpUrl
     contact: Contact
     summary: str
     education: list[Education]

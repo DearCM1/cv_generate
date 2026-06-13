@@ -55,12 +55,11 @@ def _create_run_dir(run_id: UUID) -> Path:
 def _merge_identity(
     identity: Identity,
     sections: TailoredSections,
+    url: str,
 ) -> Profile:
     """
-    Deterministically merge the static identity fields with the
-    LLM-produced tailored sections to form the final `Profile`. The
-    LLM never sees identity values, so this is the only place they
-    enter the rendered output.
+    Merge static identity, tailored sections, and the landing-page URL into
+    the final `Profile`. The LLM never sees identity or URL values.
     """
     return Profile(
         name=identity.name,
@@ -72,6 +71,7 @@ def _merge_identity(
         publications_presentations=identity.publications_presentations,
         leadership=identity.leadership,
         skills=sections.skills,
+        url=url,
     )
 
 
@@ -169,17 +169,17 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
     (run_dir / "metrics.json").write_text(metrics.model_dump_json(indent=2))
 
     # --- Step 8: Output — merge identity & render PDF ---
-    page_url = landing_url_for(
+    landing_url = landing_url_for(
         str(run_id),
         company=jd_spec.company,
         role=jd_spec.role_title,
     )
-    final = _merge_identity(identity, sections)
+    final = _merge_identity(identity, sections, landing_url)
     final_path = run_dir / "profile.json"
     final_path.write_text(final.model_dump_json(indent=2))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    pdf_path = render(final_path, out_path, page_url=page_url)
+    pdf_path = render(final_path, out_path)
 
     # --- Step 9: Render audit page & publish ---
     render_run_page(metrics)
