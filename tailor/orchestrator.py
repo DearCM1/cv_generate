@@ -23,6 +23,8 @@ from .schemas import (
     RunTimeMetrics,
     TailoredSections,
 )
+from .helpers import Colour
+from .pricing import HAIKU, SONNET
 
 
 # =============================================================
@@ -119,33 +121,48 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
     run_id = uuid7()
     run_start = datetime.now(timezone.utc)
     run_dir = _create_run_dir(run_id)
+    print(f"[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] Initialising pipeline...\
+          \n\tID={Colour.CYAN}{run_id}{Colour.END}\
+          \n\tStart={run_start}")
+    print(f"\n[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] Loading job description from Path={Colour.YELLOW}{jd_path}{Colour.END}...")
     jd_text = load_text(jd_path)
     identity = Identity.model_validate_json(IDENTITY_PATH.read_text())
+    print(f"[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] {Colour.GREEN}Job description successfully loaded.{Colour.END}")
 
     # --- Step 2: LLM stage 1 — JD Analysis (Haiku) ---
+    print(f"\n[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] Analysing job description with Model={HAIKU}...")
     jd_spec, jd_metrics = jd_analyser.analyse_jd(jd_text)
     (run_dir / "jd_spec.json").write_text(jd_spec.model_dump_json(indent=2))
+    print(f"[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] {Colour.GREEN}Job description successfully analysed.{Colour.END}")
 
     # --- Step 3: LLM stage 2 — Snippet Retrieval (Sonnet) ---
+    print(f"\n[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] Retrieving snippets with Model={SONNET}...")
     snippets = json.loads(SNIPPETS_PATH.read_text())
     selection, sel_metrics = retriever.select_snippets(snippets, jd_spec)
     (run_dir / "selection.json").write_text(selection.model_dump_json(indent=2))
+    print(f"[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] {Colour.GREEN}Snippets successfully retrieved.{Colour.END}")
 
     # --- Step 4: LLM stage 3 — Section Assembly (Sonnet) ---
+    print(f"\n[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] Assembling CV with Model={SONNET}...")
     sections, asm_metrics = assembler.assemble_profile(
         selection, jd_spec, snippets,
     )
     (run_dir / "sections_draft.json").write_text(
         sections.model_dump_json(indent=2)
     )
+    print(f"[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] {Colour.GREEN}CV successfully written.{Colour.END}")
 
     # --- Step 5: LLM stage 4 — Review (Sonnet) ---
+    print(f"\n[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] Reviewing CV with Model={SONNET}...")
     report, rev_metrics = reviewer.review(sections, jd_spec)
     (run_dir / "review.json").write_text(report.model_dump_json(indent=2))
+    print(f"[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] {Colour.GREEN}CV successfully reviewed.{Colour.END}")
 
     # --- Step 6: LLM stage 5 — Amendment (Sonnet) ---
+    print(f"\n[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] Amending CV with Model={SONNET}...")
     sections, amd_metrics = amender.amend(sections, report)
     (run_dir / "sections.json").write_text(sections.model_dump_json(indent=2))
+    print(f"[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] {Colour.GREEN}CV successfully amended.{Colour.END}")
 
     # --- Step 7: Metrics aggregation ---
     run_finish = datetime.now(timezone.utc)
@@ -167,6 +184,11 @@ def tailor(jd_path: Path, out_path: Path) -> Path:
         snippet_selection=selection,
     )
     (run_dir / "metrics.json").write_text(metrics.model_dump_json(indent=2))
+    print(f"[INFO] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] Pipeline complete.\
+          \n\tID={Colour.CYAN}{metrics.id}{Colour.END}\
+          \n\tStart={metrics.runtime.start}\
+          \n\tFinish={metrics.runtime.finish}\
+          \n\tElapsed={metrics.runtime.elapsed}")
 
     # --- Step 8: Output — merge identity & render PDF ---
     landing_url = landing_url_for(

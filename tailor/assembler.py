@@ -26,12 +26,14 @@ import json
 import sys
 
 from anthropic import APIError
+from datetime import datetime, timezone
 
 from .client import call_model
 from .pricing import SONNET
 from .prompts import ASSEMBLER_SYSTEM, ASSEMBLER_USER
 from .schemas import JDSpec, ModelMetrics, SnippetSelection, TailoredSections
 from .tool_response import parse_forced_tool_response
+from .helpers import Colour
 
 
 # =============================================================
@@ -75,9 +77,8 @@ def _resolve_text(snippet: dict, framing: str) -> str:
     for variant in snippet.get("variants", []):
         if variant.get("framing") == framing:
             return variant["text"]
-
     print(
-        f"warn: framing '{framing}' not found on snippet "
+        f"[{Colour.YELLOW}WARN{Colour.END}] [{Colour.YELLOW}{datetime.now(timezone.utc)}{Colour.END}] framing '{framing}' not found on snippet "
         f"'{snippet.get('id')}'; falling back to canonical text",
         file=sys.stderr,
     )
