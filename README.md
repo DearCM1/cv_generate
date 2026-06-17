@@ -1,13 +1,11 @@
 # cv_generate
 
-Generate tailored, print-ready CVs from a job description. A RAG pipeline
-(`tailor/`) selects experience snippets, picks the framing that matches the
-role, assembles them into a profile JSON, and hands off to a Jinja2 +
-WeasyPrint renderer (`render_pdf/`) that produces a single-page A4 PDF.
+Generate tailored, print-ready CVs from a job description. A pipeline that:
 
-Company context isn't researched separately — JDs typically embed the
-business / tech / values signals the downstream stages need, and the
-prompts are written to lean on that embedded context.
+- Uses RAG (`tailor/`) to select experience snippets, picks the framing that matches the
+role, assembles them into a profile JSON,
+- Hands off to a Jinja2 + WeasyPrint renderer (`render_pdf/`) that produces a single-page A4 PDF,
+- Compiles and publishes pipeline metrics (`render_site/`) for employers to read more about.
 
 ## Structure
 
@@ -54,15 +52,14 @@ pip install -r requirements.txt
 ```
 
 WeasyPrint has native dependencies (Pango, cairo). On macOS:
-`brew install pango`.
 
-This project uses python-dotenv>=1.2.2 to inject the Anthropic API key into the environment. Write `ANTHROPIC_API_KEY="..."` within a .env file within the repo root.
+```bash
+brew install pango
+```
 
-The audit-page pipeline expects a sibling `website/` repository by default,
-or a repository selected with `WEBSITE_REPO`. That repository must provide
-`assets/site.css` and `assets/site.js`; these are the only source of truth for
-the website's shared styles and browser behavior. `render_site` generates run
-HTML and metrics files but does not create, copy, stage, or publish assets.
+This project uses `python-dotenv>=1.2.2` to inject the Anthropic API key into the environment. Write `ANTHROPIC_API_KEY="..."` within a `.env` file within the repo root.
+
+The `render_site/` pipeline expects a sibling `website/` repository by default, or a repository selected with `WEBSITE_REPO`. That repository must provide `assets/site.css` and `assets/site.js`.
 
 ## Usage
 
@@ -73,14 +70,9 @@ python tailor.py examples/jd.md
 python tailor.py path/to/jd.md -o cv.pdf
 ```
 
-The orchestrator dumps each stage's structured output under
-`output/run_<uuid7>/` (`jd_spec.json`, `selection.json`,
-`sections_draft.json`, `review.json`, `sections.json`, `profile.json`)
-so individual stages can be inspected and debugged in isolation. The
-same directory also receives a `metrics.json` capturing per-call
-timing, token usage, and dollar cost for the public-facing run page.
+The orchestrator dumps each stage's structured output under `output/run_<uuid7>/` (`jd_spec.json`, `selection.json`, `sections_draft.json`, `review.json`, `sections.json`, `profile.json`) so individual stages can be inspected and debugged in isolation. The same directory also receives a `metrics.json` capturing per-call timing, token usage, and dollar cost for the public-facing run page.
 
-Rendering on its own (skip the LLM stages — hand it a `profile.json`):
+Rendering PDF on its own:
 
 ```bash
 python -m render_pdf.main
@@ -102,45 +94,27 @@ render(Path("data.json"), Path("output/cv.pdf"))
 
 ## Orchestration
 
-The `tailor()` function in `tailor/orchestrator.py` runs nine sequential steps.
-This is the canonical reference; code comments in `orchestrator.py` mark each step.
+The `tailor()` function in `tailor/orchestrator.py` runs nine sequential steps:
 
 1. **Load inputs**: Parse JD text; load static identity; generate run ID and timestamps.
-2. **LLM stage 1 — JD Analysis** (Haiku): `jd_analyser.analyse_jd()` extracts keywords,
-   must-haves, tone signals, and a framing hint → `JDSpec`.
-3. **LLM stage 2 — Snippet Retrieval** (Sonnet): `retriever.select_snippets()` picks
-   experience bullets per render-hint section (full corpus cached) → `SnippetSelection`.
-4. **LLM stage 3 — Section Assembly** (Sonnet): `assembler.assemble_profile()` weaves
-   selected snippets into CV sections → `TailoredSections` (draft).
-5. **LLM stage 4 — Review** (Sonnet): `reviewer.review()` critiques the draft against
-   the job spec → `ReviewReport`.
-6. **LLM stage 5 — Amendment** (Sonnet): `amender.amend()` applies the review feedback
-   → `TailoredSections` (final).
-7. **Metrics aggregation**: Collect timing, token counts, and cost from all five stages
-   into a master `Metrics` object.
-8. **Output**: Merge `identity` with the final tailored sections (client-side, LLM-free)
-   and the contextual website URL → `Profile`; write `profile.json`, then render it to
-   PDF via `render_pdf`. The renderer receives all template data through this JSON file.
-9. **Audit & publish**: Generate a public run page (`render_site`) and optionally publish
-   its `cv/<uuid7>/` directory to the website repo (Cloudflare Pages). Generated pages
-   reference the website-owned `/assets/site.css` and `/assets/site.js`.
+2. **LLM stage 1 — JD Analysis** (Haiku): `jd_analyser.analyse_jd()` extracts keywords, must-haves, tone signals, and a framing hint → `JDSpec`.
+3. **LLM stage 2 — Snippet Retrieval** (Sonnet): `retriever.select_snippets()` picks experience bullets per render-hint section (full corpus cached) → `SnippetSelection`.
+4. **LLM stage 3 — Section Assembly** (Sonnet): `assembler.assemble_profile()` weaves selected snippets into CV sections → `TailoredSections` (draft).
+5. **LLM stage 4 — Review** (Sonnet): `reviewer.review()` critiques the draft against the job spec → `ReviewReport`.
+6. **LLM stage 5 — Amendment** (Sonnet): `amender.amend()` applies the review feedback → `TailoredSections` (final).
+7. **Metrics aggregation**: Collect timing, token counts, and cost from all five stages into a master `Metrics` object.
+8. **Output**: Merge `identity` with the final tailored sections (client-side, LLM-free) and the contextual website URL → `Profile`; write `profile.json`, then render it to PDF via `render_pdf`. The renderer receives all template data through this JSON file.
+9. **Audit & publish**: Generate a public run page (`render_site`) and optionally publish its `cv/<uuid7>/` directory to the website repo (Cloudflare Pages).
 
-Steps 2–6 are LLM stages, each a single forced tool call. Step 7 aggregates the
-captured metrics. Steps 8–9 are post-processing (no LLM, no API calls).
+Steps 2–6 are LLM stages, each a single forced tool call. Step 7 aggregates the captured metrics. Steps 8–9 are post-processing.
 
 ### Website asset ownership
 
-The `website/` repository owns all shared web assets. Edit `website/assets/site.css`
-and `website/assets/site.js` directly; there are no mirrored copies under
-`render_site/`. Publishing a run stages only `website/cv/<uuid7>/`, preventing the
-CV pipeline from overwriting unrelated website asset changes. The stylesheet at
-`render_pdf/static/style.css` is separate and remains the source for PDF rendering.
+The `website/` repository owns all shared web assets. Edit `website/assets/site.css` and `website/assets/site.js` directly. Publishing a run stages only `website/cv/<uuid7>/`, preventing the CV pipeline from overwriting unrelated website asset changes. The stylesheet at `render_pdf/static/style.css` is separate and remains the source for PDF rendering.
 
 ## Pipeline at a glance
 
-Each LLM stage (steps 2–6) uses a single forced tool call against Claude (Haiku
-for cheap JD extraction, Sonnet for everything else). Tool input schemas are
-generated from Pydantic models so the model is constrained to emit valid JSON.
+Each LLM stage (steps 2–6) uses a single forced tool call against Claude (Haiku for cheap JD extraction, Sonnet for everything else). Tool input schemas are generated from Pydantic models so the model is constrained to emit valid JSON.
 
 ```
 jd.md     ─►  jd_analyser  ─►  JDSpec
@@ -148,16 +122,10 @@ snippets  ─►  retriever    ─►  SnippetSelection
               assembler    ─►  TailoredSections (draft)
               reviewer     ─►  ReviewReport
               amender      ─►  TailoredSections (final)
-identity ─┬──────────────────► Profile ─► render_pdf ─► cv.pdf
-sections ─┘
+sections ─┬─────────────────►  Profile ─► render_pdf ─► cv.pdf
+identity ─┘
 ```
 
 ## Data shape
 
-See `render_pdf/data/profile.json` for the full schema; the
-`tailor.schemas.Profile` Pydantic model mirrors it exactly. Top-level
-keys consumed by the template: `name`, `credential`, `contact`,
-`url`, `summary`, `education`, `experience`, `publications_presentations`,
-`leadership`, `skills`. Fields ending in `text` / `qualification` accept
-inline HTML (e.g. `<strong>`, `<a>`) and are passed through the `| safe`
-filter — sanitise upstream when accepting LLM-generated content.
+The `tailor.schemas.Profile` Pydantic model contains the full schema of the final CV profile data object. Top-level keys consumed by the template: `name`, `credential`, `contact`, `url`, `summary`, `education`, `experience`, `publications_presentations`, `leadership`, `skills`. Fields ending in `text` / `qualification` accept inline HTML (e.g. `<strong>`, `<a>`) and are passed through the `| safe` filter.
