@@ -72,6 +72,11 @@ class SnippetSelection(BaseModel):
     picks_by_render_hint: dict[str, list[SnippetPick]]
 
 
+class Phone(BaseModel):
+    label: str
+    url: str
+
+
 class LinkedIn(BaseModel):
     label: str
     url: str
@@ -84,7 +89,7 @@ class Email(BaseModel):
 
 class Contact(BaseModel):
     location: str
-    phone: str
+    phone: Phone
     email: Email
     linkedin: LinkedIn
 

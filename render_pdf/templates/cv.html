@@ -6,32 +6,35 @@
 </head>
 <body>
     <header class="header">
-        <h1 class="name">{{ name }}{% if credential %} <span class="credential">{{ credential }}</span>{% endif %}</h1>
-        <p class="contact">
-            {{ contact.location }} | {{ contact.phone }}
-            {%- if contact.email %} | <a href="{{ contact.email.url }}">{{ contact.email.label }}</a>{% endif %}
-            {%- if contact.linkedin %} | <a href="{{ contact.linkedin.url }}">{{ contact.linkedin.label }}</a>{% endif %}
-        </p>
+        <div class="identity">
+            <h1 class="name">{{ name }}{% if credential %} <span class="credential">{{ credential }}</span>{% endif %}</h1>
+            <p class="contact">
+                <span>{{ contact.location }}</span>
+                {%- if contact.phone %}<span><a href="{{ contact.phone.url }}">{{ contact.phone.label }}</a></span>{% endif %}
+                {%- if contact.email %}<span><a href="{{ contact.email.url }}">{{ contact.email.label }}</a></span>{% endif %}
+                {%- if contact.linkedin %}<span><a href="{{ contact.linkedin.url }}">{{ contact.linkedin.label }}</a></span>{% endif %}
+            </p>
+        </div>
         <p class="summary">{{ summary }}</p>
     </header>
 
     <section class="section">
-        <h2 class="section-title">EDUCATION</h2>
+        <h2 class="section-title"><span>EDUCATION</span></h2>
         <table class="edu-table">
             {% for item in education %}
             <tr>
                 <td class="edu-main"><strong>{{ item.institution }}</strong> &ndash; {{ item.qualification | safe }}</td>
-                <td class="edu-dates"><strong>{{ item.dates }}</strong></td>
+                <td class="edu-dates"><code class="date-pill">{{ item.dates }}</code></td>
             </tr>
             {% endfor %}
         </table>
     </section>
 
     <section class="section">
-        <h2 class="section-title">EXPERIENCE</h2>
+        <h2 class="section-title"><span>EXPERIENCE</span></h2>
         {% for job in experience %}
         <div class="job">
-            <p class="job-heading"><strong>{{ job.title }} | {{ job.organisation }} | {{ job.dates }}</strong></p>
+            <p class="job-heading"><strong>{{ job.title }} | {{ job.organisation }} <code class="date-pill">{{ job.dates }}</code></strong></p>
             <ul>
                 {% for bullet in job.bullets %}
                 <li>{{ bullet }}</li>
@@ -42,7 +45,7 @@
     </section>
 
     <section class="section">
-        <h2 class="section-title">PUBLICATIONS &amp; PRESENTATIONS</h2>
+        <h2 class="section-title"><span>PUBLICATIONS &amp; PRESENTATIONS</span></h2>
         <ul>
             {% for item in publications_presentations %}
             <li><strong>{{ item.label }}:</strong> {{ item.text | safe }}</li>
@@ -51,12 +54,12 @@
     </section>
 
     <section class="section">
-        <h2 class="section-title">LEADERSHIP</h2>
+        <h2 class="section-title"><span>LEADERSHIP</span></h2>
         <p class="indented">{{ leadership }}</p>
     </section>
 
     <section class="section">
-        <h2 class="section-title">SKILLS</h2>
+        <h2 class="section-title"><span>SKILLS</span></h2>
         <ul>
             {% for item in skills %}
             <li><strong>{{ item.label }}:</strong> {{ item.text | safe }}</li>
@@ -65,7 +68,13 @@
     </section>
 
     {% if url %}
-    <p class="cv-footer">This CV was tailored to the job description using a RAG AI pipeline I designed and built. You can read more here: <a href="{{ url }}">calumdear.dev</a></p>
+    <footer class="cv-footer">
+        <img class="cv-footer-logo" src="static/logo_light_small.png" alt="">
+        <div class="cv-footer-copy">
+            <p>This CV was tailored to the job description using a RAG AI pipeline I designed and built. You can read more here: <a href="{{ url }}">calumdear.dev</a></p>
+            <p>Or copy the following url into your browser: {{ url }}</p>
+        </div>
+    </footer>
     {% endif %}
 </body>
 </html>

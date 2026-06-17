@@ -4,7 +4,7 @@
 
     @bottom-center {
         content: element(cv-footer);
-        vertical-align: top;
+        vertical-align: bottom;
     }
 }
 
@@ -12,61 +12,173 @@
     box-sizing: border-box;
 }
 
+:root {
+    --ink: #18202b;
+    --muted: #526074;
+    --faint: #748197;
+    --line: #d7deea;
+    --line-soft: #e7ebf2;
+    --panel: #f7f9fc;
+    --accent: #2563eb;
+    --accent-2: #6d5dfc;
+    --accent-soft: #eef4ff;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
 html, body {
     margin: 0;
     padding: 0;
-    color: #000;
-    font-family: "Helvetica", "Arial", sans-serif;
+    color: var(--ink);
+    font-family: var(--sans);
     font-size: 10pt;
     line-height: 1.3;
 }
 
+code {
+    font-family: var(--mono);
+}
+
+body {
+    background:
+        linear-gradient(180deg, #fbfcff 0, #fff 90pt);
+    padding-left: 9pt;
+}
+
 /* ===== Header ===== */
 .header {
-    margin-bottom: 6pt;
+    position: relative;
+    margin-bottom: 5pt;
+    padding-bottom: 5pt;
+}
+
+.header::before,
+.section::before {
+    content: "";
+    position: absolute;
+    left: -9pt;
+    top: 1pt;
+    bottom: 1pt;
+    width: 2.5pt;
+    border-radius: 999pt;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+}
+
+.identity {
+    position: relative;
+}
+
+.identity::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 2pt;
+    width: 42pt;
+    height: 3pt;
+    border-radius: 999pt;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
 }
 
 .name {
-    font-size: 26pt;
-    font-weight: bold;
+    font-size: 25pt;
+    font-weight: 750;
     margin: 0 0 2pt 0;
     line-height: 1.05;
+    letter-spacing: -0.45pt;
 }
 
 .credential {
     font-size: 11pt;
-    font-weight: normal;
-    margin-left: 4pt;
+    font-weight: 500;
+    margin-left: 3pt;
+    color: var(--muted);
+    letter-spacing: 0;
 }
 
 .contact {
-    margin: 0 0 6pt 0;
-    font-size: 10pt;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3pt 4pt;
+    margin: 0 0 5pt 0;
+    font-size: 8.6pt;
+    color: var(--muted);
+}
+
+.contact span {
+    display: inline-block;
+    padding: 1.7pt 5.5pt 1.9pt;
+    background: var(--panel);
+    border: 0.45pt solid var(--line-soft);
+    border-radius: 999pt;
+    line-height: 1.15;
 }
 
 .contact a {
-    color: #1155cc;
-    text-decoration: underline;
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.date-pill {
+    display: inline-block;
+    padding: 1.2pt 4.5pt 1.3pt;
+    background: var(--accent-soft);
+    border: 0.45pt solid #dbe7ff;
+    border-radius: 999pt;
+    color: var(--accent);
+    font-size: 7.8pt;
+    font-weight: 650;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .summary {
-    margin: 4pt 0 0 0;
-    font-size: 10pt;
+    margin: 3pt 0 0 0;
+    padding: 5pt 7pt;
+    background: var(--panel);
+    border-left: 2pt solid var(--accent);
+    border-radius: 4pt;
+    font-size: 9.55pt;
     text-align: justify;
 }
 
 /* ===== Sections ===== */
 .section {
-    border-top: 0.5pt solid #000;
-    padding-top: 4pt;
-    margin-top: 6pt;
+    position: relative;
+    border-top: 0.55pt solid var(--line);
+    padding-top: 3.5pt;
+    margin-top: 5.5pt;
+}
+
+.header + .section {
+    border-top: 0;
+    padding-top: 1pt;
+    margin-top: 3pt;
 }
 
 .section-title {
-    font-size: 14pt;
-    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5pt;
+    font-size: 8.6pt;
+    font-weight: 750;
     margin: 0 0 3pt 0;
-    letter-spacing: 0.2pt;
+    letter-spacing: 0.85pt;
+    color: var(--accent);
+}
+
+.section-title::after {
+    content: "";
+    height: 0.55pt;
+    flex: 1;
+    background: var(--line-soft);
+}
+
+.section-title span {
+    display: inline-block;
+    padding: 1.5pt 5pt 1.8pt;
+    background: var(--accent-soft);
+    border: 0.45pt solid #dbe7ff;
+    border-radius: 999pt;
 }
 
 /* ===== Education table — institution left, dates right ===== */
@@ -78,7 +190,7 @@ html, body {
 .edu-table td {
     padding: 0;
     vertical-align: top;
-    font-size: 10pt;
+    font-size: 9.65pt;
 }
 
 .edu-main {
@@ -93,24 +205,30 @@ html, body {
 
 /* ===== Experience ===== */
 .job {
-    margin-top: 3pt;
-    margin-bottom: 4pt;
+    margin-top: 2.5pt;
+    margin-bottom: 3.5pt;
 }
 
 .job-heading {
     margin: 0 0 1pt 8pt;
-    font-size: 10pt;
+    font-size: 9.7pt;
+    color: #111827;
 }
 
 /* ===== Lists ===== */
 ul {
-    margin: 2pt 0 2pt 0;
+    margin: 1.5pt 0 1.5pt 0;
     padding-left: 32pt;
 }
 
 li {
     margin: 1pt 0;
     text-align: left;
+    font-size: 9.7pt;
+}
+
+li::marker {
+    color: var(--accent);
 }
 
 p {
@@ -120,28 +238,61 @@ p {
 .indented {
     margin-left: 16pt;
     text-align: justify;
+    font-size: 9.7pt;
 }
 
 /* ===== Links ===== */
 a {
-    color: #1155cc;
-    text-decoration: underline;
+    color: var(--accent);
+    text-decoration: none;
+}
+
+strong {
+    color: #111827;
+    font-weight: 720;
 }
 
 /* ===== Run-report footer ===== */
 .cv-footer {
     position: running(cv-footer);
-    width: 100%;
+    width: 210mm;
+    height: 18mm;
     margin: 0;
-    padding-top: 4pt;
-    border-top: 0.5pt solid #999;
-    font-size: 7.5pt;
-    color: #666;
-    text-align: center;
+    padding: 3.2mm 14mm 3mm;
+    display: flex;
+    align-items: center;
+    gap: 4mm;
+    background:
+        linear-gradient(90deg, var(--accent), var(--accent-2)) top left / 100% 1.1mm no-repeat,
+        #0c0f14;
+    color: #c8d1df;
+    font-size: 7.4pt;
+    line-height: 1.3;
+    text-align: left;
 }
 
 .cv-footer a {
-    color: #666;
+    color: #9cc2ff;
+}
+
+.cv-footer-copy {
+    min-width: 0;
+}
+
+.cv-footer p {
+    margin: 0;
+}
+
+.cv-footer p + p {
+    margin-top: 1pt;
+}
+
+.cv-footer-logo {
+    flex: 0 0 auto;
+    width: 11.5mm;
+    height: 11.5mm;
+    display: block;
+    border-radius: 2mm;
 }
 
 /* ===== Print rules ===== */

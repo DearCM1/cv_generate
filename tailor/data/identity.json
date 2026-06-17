@@ -3,7 +3,10 @@
   "credential": "Ph.D. UCL",
   "contact": {
     "location": "Bristol, UK",
-    "phone": "+44 7540 347550",
+    "phone": {
+      "label": "+44 7540 347550",
+      "url": "tel:+447540347550"
+    },
     "email": {
       "label": "calumdear@gmail.com",
       "url": "mailto:calumdear@gmail.com"
